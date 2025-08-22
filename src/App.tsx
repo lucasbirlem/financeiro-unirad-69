@@ -1,19 +1,30 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-
-const App = () => (
-  <BrowserRouter>
-    <Toaster />
-    <Sonner />
-    <Routes>
-      <Route path="/" element={<Index />} />
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  </BrowserRouter>
-);
+const App = () => {
+  return (
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h1>Financeiro Unirad</h1>
+      <p>Sistema avançado para comparação e processamento de planilhas financeiras</p>
+      <div style={{ 
+        padding: '20px', 
+        border: '1px solid #ccc', 
+        borderRadius: '8px',
+        marginTop: '20px',
+        backgroundColor: '#f9f9f9'
+      }}>
+        <h2>Modelo 1 - Conversão Otimus → Referência</h2>
+        <p>Converte arquivo gerado do Otimus para a referência com tratamento de dados específico</p>
+        <button style={{
+          padding: '10px 20px',
+          backgroundColor: '#22c55e',
+          color: 'white',
+          border: 'none',
+          borderRadius: '6px',
+          cursor: 'pointer'
+        }}>
+          Em desenvolvimento...
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default App;
