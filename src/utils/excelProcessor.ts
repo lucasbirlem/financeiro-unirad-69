@@ -47,7 +47,8 @@ export class ExcelProcessor {
         VENCIMENTO: vencimento,
         TIPO: tipo.includes('DÉBITO') || tipo.includes('CRÉDITO') ? 
               (tipo.includes('DÉBITO') ? 'DÉBITO' : 'CRÉDITO') : 
-              (tipo.includes('Cartão de Crédito') ? 'CRÉDITO' : ''), // Trata "Cartão de Crédito" como CRÉDITO
+              (tipo.includes('Cartão de Crédito') ? 'CRÉDITO' : 
+               tipo.includes('Cartão de Débito') ? 'DÉBITO' : ''), // Trata "Cartão de Crédito" como CRÉDITO e "Cartão de Débito" como DÉBITO
         PARC: parcela,
         QTDADE: 1, // Assumindo quantidade 1 por linha
         BANDEIRA: bandeira,
@@ -80,7 +81,10 @@ export class ExcelProcessor {
           rowDate = new Date(row.VENDA);
         }
         
-        return rowDate >= start && rowDate <= end;
+        // Incluir a data final também (até 23:59:59 da data final)
+        const endOfDay = new Date(end);
+        endOfDay.setHours(23, 59, 59, 999);
+        return rowDate >= start && rowDate <= endOfDay;
       } catch (error) {
         console.warn('Erro ao parsear data:', row.VENDA);
         return false;
