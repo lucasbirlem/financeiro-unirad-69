@@ -16,9 +16,10 @@ const Index = () => {
   // Modelo 1 - Conversão Otimus para Referência
   const [relCartoesFile, setRelCartoesFile] = useState<File>();
   const [testeFile, setTesteFile] = useState<File>();
-  const [startDate, setStartDate] = useState<Date>();
-  const [endDate, setEndDate] = useState<Date>();
-  const [filterType, setFilterType] = useState<'venda' | 'vencimento'>('venda');
+  const [vendaStartDate, setVendaStartDate] = useState<Date>();
+  const [vendaEndDate, setVendaEndDate] = useState<Date>();
+  const [vencimentoStartDate, setVencimentoStartDate] = useState<Date>();
+  const [vencimentoEndDate, setVencimentoEndDate] = useState<Date>();
   const [processedData, setProcessedData] = useState<TesteRow[]>();
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -63,16 +64,30 @@ const Index = () => {
       //   }
       // }
       
-      // Aplicar filtro de data se selecionado
-      if (startDate && endDate) {
-        const beforeFilter = convertedData.length;
+      // Aplicar filtros de data se selecionados
+      const beforeFilter = convertedData.length;
+      
+      // Filtro por data de venda
+      if (vendaStartDate && vendaEndDate) {
         convertedData = ExcelProcessor.filterByDateRange(
           convertedData,
-          startDate.toISOString().split('T')[0],
-          endDate.toISOString().split('T')[0],
-          filterType
+          vendaStartDate.toISOString().split('T')[0],
+          vendaEndDate.toISOString().split('T')[0],
+          'venda'
         );
-        console.log(`Filtro aplicado (${filterType}): ${beforeFilter} → ${convertedData.length} registros`);
+        console.log(`Filtro venda aplicado: ${beforeFilter} → ${convertedData.length} registros`);
+      }
+      
+      // Filtro por data de vencimento (aplicado sobre o resultado anterior)
+      if (vencimentoStartDate && vencimentoEndDate) {
+        const beforeVencimentoFilter = convertedData.length;
+        convertedData = ExcelProcessor.filterByDateRange(
+          convertedData,
+          vencimentoStartDate.toISOString().split('T')[0],
+          vencimentoEndDate.toISOString().split('T')[0],
+          'vencimento'
+        );
+        console.log(`Filtro vencimento aplicado: ${beforeVencimentoFilter} → ${convertedData.length} registros`);
       }
 
       setProcessedData(convertedData);
@@ -188,12 +203,14 @@ const Index = () => {
                   <div>
                     <h3 className="text-lg font-medium mb-4">Filtro por Período (Opcional)</h3>
                     <DateRangeSelector
-                      startDate={startDate}
-                      endDate={endDate}
-                      onStartDateChange={setStartDate}
-                      onEndDateChange={setEndDate}
-                      filterType={filterType}
-                      onFilterTypeChange={setFilterType}
+                      vendaStartDate={vendaStartDate}
+                      vendaEndDate={vendaEndDate}
+                      vencimentoStartDate={vencimentoStartDate}
+                      vencimentoEndDate={vencimentoEndDate}
+                      onVendaStartDateChange={setVendaStartDate}
+                      onVendaEndDateChange={setVendaEndDate}
+                      onVencimentoStartDateChange={setVencimentoStartDate}
+                      onVencimentoEndDateChange={setVencimentoEndDate}
                     />
                   </div>
 
