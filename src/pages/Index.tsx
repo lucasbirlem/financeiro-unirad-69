@@ -8,12 +8,10 @@ import { ComparisonResults } from '@/components/ComparisonResults';
 import { ExcelProcessor } from '@/utils/excelProcessor';
 import { RelCartoesRow, TesteRow } from '@/types/excel';
 import { useToast } from '@/hooks/use-toast';
-import { useReferenceData } from '@/hooks/useReferenceData';
 import { FileText, GitCompare, BarChart3 } from 'lucide-react';
 
 const Index = () => {
   const { toast } = useToast();
-  const { referenceData, isLoading, saveReferenceData } = useReferenceData();
   
   // Modelo 1 - Conversão Otimus para Referência
   const [relCartoesFile, setRelCartoesFile] = useState<File>();
@@ -51,19 +49,19 @@ const Index = () => {
       let convertedData = ExcelProcessor.convertRelCartoesToTeste(relCartoesData);
       console.log('Dados convertidos:', convertedData.slice(0, 3)); // Debug
       
-      // Salvar como referência se for o primeiro arquivo ou se não há referência
-      if (testeFile && !referenceData) {
-        try {
-          const referenceFileData = await ExcelProcessor.readExcelFile(testeFile) as TesteRow[];
-          await saveReferenceData(referenceFileData);
-          toast({
-            title: "Referência Salva",
-            description: "Arquivo de referência salvo no banco de dados",
-          });
-        } catch (error) {
-          console.error('Erro ao salvar referência:', error);
-        }
-      }
+      // TODO: Implement reference data saving when Supabase is properly configured
+      // if (testeFile && !referenceData) {
+      //   try {
+      //     const referenceFileData = await ExcelProcessor.readExcelFile(testeFile) as TesteRow[];
+      //     await saveReferenceData(referenceFileData);
+      //     toast({
+      //       title: "Referência Salva",
+      //       description: "Arquivo de referência salvo no banco de dados",
+      //     });
+      //   } catch (error) {
+      //     console.error('Erro ao salvar referência:', error);
+      //   }
+      // }
       
       // Aplicar filtro de data se selecionado
       if (startDate && endDate) {
@@ -178,26 +176,13 @@ const Index = () => {
                       onRemoveFile={() => setRelCartoesFile(undefined)}
                     />
                     
-                    {!referenceData && !isLoading && (
-                      <FileUpload
-                        label="Arquivo de Referência"
-                        description="Arquivo padrão de referência (será salvo para uso futuro)"
-                        onFileSelect={setTesteFile}
-                        selectedFile={testeFile}
-                        onRemoveFile={() => setTesteFile(undefined)}
-                      />
-                    )}
-                    
-                    {referenceData && (
-                      <Card className="p-4 bg-green-50 border-green-200">
-                        <div className="text-center">
-                          <div className="text-green-600 mb-2">✓ Referência Carregada</div>
-                          <div className="text-sm text-green-700">
-                            {referenceData.length} registros de referência disponíveis
-                          </div>
-                        </div>
-                      </Card>
-                    )}
+                    <FileUpload
+                      label="Arquivo de Referência"
+                      description="Arquivo padrão de referência (opcional)"
+                      onFileSelect={setTesteFile}
+                      selectedFile={testeFile}
+                      onRemoveFile={() => setTesteFile(undefined)}
+                    />
                   </div>
 
                   <div>
