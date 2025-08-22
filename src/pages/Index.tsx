@@ -43,15 +43,20 @@ const Index = () => {
     setIsProcessing(true);
     try {
       const relCartoesData = await ExcelProcessor.readExcelFile(relCartoesFile) as RelCartoesRow[];
-      let convertedData = ExcelProcessor.convertRelCartoesToTeste(relCartoesData);
+      console.log('Dados originais:', relCartoesData.slice(0, 3)); // Debug
       
-      // Aplicar filtro de data se selecionado
+      let convertedData = ExcelProcessor.convertRelCartoesToTeste(relCartoesData);
+      console.log('Dados convertidos:', convertedData.slice(0, 3)); // Debug
+      
+      // Aplicar filtro de data se selecionado (filtra pela coluna VENDA)
       if (startDate && endDate) {
+        const beforeFilter = convertedData.length;
         convertedData = ExcelProcessor.filterByDateRange(
           convertedData,
           startDate.toISOString().split('T')[0],
           endDate.toISOString().split('T')[0]
         );
+        console.log(`Filtro aplicado: ${beforeFilter} → ${convertedData.length} registros`);
       }
 
       setProcessedData(convertedData);

@@ -25,7 +25,7 @@ export class ExcelProcessor {
   static convertRelCartoesToTeste(relCartoes: RelCartoesRow[]): TesteRow[] {
     return relCartoes.map(row => ({
       AUTORIZADOR: row.Autorizador || '',
-      VENDA: row.Tipo === 'VENDA' ? row.Entrada : '', // Quando tipo for VENDA, mapeia para ENTRADA
+      VENDA: row.Entrada || '', // VENDA vem da coluna Entrada
       VENCIMENTO: row.Vencimento || '',
       TIPO: row.Tipo === 'DÉBITO' || row.Tipo === 'CRÉDITO' ? row.Tipo : '', // Apenas DÉBITO ou CRÉDITO
       PARC: row.Parcela || 0,
@@ -44,20 +44,26 @@ export class ExcelProcessor {
     const end = new Date(endDate);
     
     return data.filter(row => {
-      if (!row.VENCIMENTO) return false;
+      if (!row.VENDA) return false;
       
-      // Tenta diferentes formatos de data
+      // Tenta diferentes formatos de data na coluna VENDA
       let rowDate: Date;
-      if (row.VENCIMENTO.includes('/')) {
-        const [day, month, year] = row.VENCIMENTO.split('/');
-        rowDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      } else if (row.VENCIMENTO.includes('-')) {
-        rowDate = new Date(row.VENCIMENTO);
-      } else {
+      try {
+        if (row.VENDA.includes('/')) {
+          const [day, month, year] = row.VENDA.split('/');
+          rowDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        } else if (row.VENDA.includes('-')) {
+          rowDate = new Date(row.VENDA);
+        } else {
+          // Tenta interpretar como timestamp ou outros formatos
+          rowDate = new Date(row.VENDA);
+        }
+        
+        return rowDate >= start && rowDate <= end;
+      } catch (error) {
+        console.warn('Erro ao parsear data:', row.VENDA);
         return false;
       }
-      
-      return rowDate >= start && rowDate <= end;
     });
   }
 
