@@ -145,7 +145,7 @@ export const DateRangeSelector = ({
                     setVencimentoStartOpen(false);
                   }}
                   disabled={(date) =>
-                    date > new Date() || (vencimentoEndDate && date > vencimentoEndDate)
+                    vencimentoEndDate && date > vencimentoEndDate
                   }
                   initialFocus
                 />
@@ -181,7 +181,7 @@ export const DateRangeSelector = ({
                     setVencimentoEndOpen(false);
                   }}
                   disabled={(date) =>
-                    date > new Date() || (vencimentoStartDate && date < vencimentoStartDate)
+                    vencimentoStartDate && date < vencimentoStartDate
                   }
                   initialFocus
                 />

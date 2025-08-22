@@ -12,9 +12,10 @@ interface ComparisonResultsProps {
   };
   processedData?: TesteRow[];
   mode: 'model1' | 'model2';
+  onReset?: () => void;
 }
 
-export const ComparisonResults = ({ results, processedData, mode }: ComparisonResultsProps) => {
+export const ComparisonResults = ({ results, processedData, mode, onReset }: ComparisonResultsProps) => {
   const handleDownload = () => {
     if (mode === 'model1' && processedData) {
       ExcelProcessor.exportToExcel(processedData, 'modelo1_processado.xlsx');
@@ -25,6 +26,11 @@ export const ComparisonResults = ({ results, processedData, mode }: ComparisonRe
         'modelo2_comparacao_banco.xlsx',
         results.discrepancies
       );
+    }
+    
+    // Reset após download
+    if (onReset) {
+      onReset();
     }
   };
 

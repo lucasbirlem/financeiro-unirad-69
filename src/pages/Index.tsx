@@ -8,10 +8,12 @@ import { ComparisonResults } from '@/components/ComparisonResults';
 import { ExcelProcessor } from '@/utils/excelProcessor';
 import { RelCartoesRow, TesteRow } from '@/types/excel';
 import { useToast } from '@/hooks/use-toast';
+import { useReferenceData } from '@/hooks/useReferenceData';
 import { FileText, GitCompare, BarChart3 } from 'lucide-react';
 
 const Index = () => {
   const { toast } = useToast();
+  const { referenceData, saveReferenceData } = useReferenceData();
   
   // Modelo 1 - Conversão Otimus para Referência
   const [relCartoesFile, setRelCartoesFile] = useState<File>();
@@ -50,19 +52,19 @@ const Index = () => {
       let convertedData = ExcelProcessor.convertRelCartoesToTeste(relCartoesData);
       console.log('Dados convertidos:', convertedData.slice(0, 3)); // Debug
       
-      // TODO: Implement reference data saving when Supabase is properly configured
-      // if (testeFile && !referenceData) {
-      //   try {
-      //     const referenceFileData = await ExcelProcessor.readExcelFile(testeFile) as TesteRow[];
-      //     await saveReferenceData(referenceFileData);
-      //     toast({
-      //       title: "Referência Salva",
-      //       description: "Arquivo de referência salvo no banco de dados",
-      //     });
-      //   } catch (error) {
-      //     console.error('Erro ao salvar referência:', error);
-      //   }
-      // }
+      // Salvar arquivo de referência se fornecido
+      if (testeFile && !referenceData) {
+        try {
+          const referenceFileData = await ExcelProcessor.readExcelFile(testeFile) as TesteRow[];
+          await saveReferenceData(referenceFileData);
+          toast({
+            title: "Referência Salva",
+            description: "Arquivo de referência salvo no banco de dados",
+          });
+        } catch (error) {
+          console.error('Erro ao salvar referência:', error);
+        }
+      }
       
       // Aplicar filtros de data se selecionados
       const beforeFilter = convertedData.length;
@@ -137,6 +139,21 @@ const Index = () => {
     } finally {
       setIsComparing(false);
     }
+  };
+
+  const handleResetModel1 = () => {
+    setRelCartoesFile(undefined);
+    setVendaStartDate(undefined);
+    setVendaEndDate(undefined);
+    setVencimentoStartDate(undefined);
+    setVencimentoEndDate(undefined);
+    setProcessedData(undefined);
+  };
+
+  const handleResetModel2 = () => {
+    setProcessedFile(undefined);
+    setBankFile(undefined);
+    setComparisonResults(undefined);
   };
 
   return (
@@ -229,6 +246,7 @@ const Index = () => {
                 <ComparisonResults 
                   processedData={processedData}
                   mode="model1"
+                  onReset={handleResetModel1}
                 />
               )}
             </TabsContent>
@@ -277,6 +295,7 @@ const Index = () => {
                 <ComparisonResults 
                   results={comparisonResults}
                   mode="model2"
+                  onReset={handleResetModel2}
                 />
               )}
             </TabsContent>
