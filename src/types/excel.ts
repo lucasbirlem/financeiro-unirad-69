@@ -24,6 +24,17 @@ export interface TesteRow {
   DESCONTO?: number;
 }
 
+export interface BankReportRow {
+  AUTORIZACAO?: string;
+  'DATA DA VENDA'?: string;
+  'DATA DE VENCIMENTO'?: string;
+  'BANDEIRA / MODALIDADE'?: string;
+  PARCELAS?: number;
+  'VALOR DA VENDA'?: number;
+  'VALOR DA PARCELA'?: number;
+  DESCONTOS?: number;
+}
+
 export interface ComparisonResult {
   matched: TesteRow[];
   unmatched: TesteRow[];

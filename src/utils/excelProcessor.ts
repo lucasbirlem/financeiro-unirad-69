@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { RelCartoesRow, TesteRow } from '@/types/excel';
+import { RelCartoesRow, TesteRow, BankReportRow } from '@/types/excel';
 
 export class ExcelProcessor {
   static readExcelFile(file: File): Promise<any[]> {
@@ -93,45 +93,116 @@ export class ExcelProcessor {
     });
   }
 
-  static compareWithBankReport(processedData: TesteRow[], bankData: TesteRow[]): {
+  static processBankReport(bankData: any[]): TesteRow[] {
+    return bankData.map(row => {
+      // Mapeia as colunas do relatório do banco para o formato TesteRow
+      const autorizacao = row['AUTORIZACAO'] || row['AUTORIZAÇÃO'] || '';
+      const dataVenda = row['DATA DA VENDA'] || '';
+      const dataVencimento = row['DATA DE VENCIMENTO'] || '';
+      const bandeiraModalidade = row['BANDEIRA / MODALIDADE'] || '';
+      const parcelas = row['PARCELAS'] || 0;
+      const valorVenda = row['VALOR DA VENDA'] || 0;
+      const valorParcela = row['VALOR DA PARCELA'] || 0;
+      const descontos = row['DESCONTOS'] || 0;
+
+      // Separa BANDEIRA e MODALIDADE (TIPO)
+      const [bandeira = '', tipo = ''] = bandeiraModalidade.split(' ');
+
+      return {
+        AUTORIZADOR: autorizacao,
+        VENDA: dataVenda,
+        VENCIMENTO: dataVencimento,
+        TIPO: tipo.toUpperCase(),
+        PARC: parseInt(parcelas.toString()) || 0,
+        QTDADE: 1,
+        BANDEIRA: bandeira.toUpperCase(),
+        BRUTO: parseFloat(valorVenda.toString()) || 0,
+        LIQUIDO: parseFloat(valorParcela.toString()) || 0,
+        DESCONTO: parseFloat(descontos.toString()) || 0
+      };
+    });
+  }
+
+  static compareWithBankReport(processedData: TesteRow[], bankData: any[]): {
     matched: TesteRow[];
     discrepancies: Array<{ row: TesteRow; issues: string[] }>;
   } {
     const matched: TesteRow[] = [];
     const discrepancies: Array<{ row: TesteRow; issues: string[] }> = [];
 
+    // Processa os dados do banco
+    const processedBankData = this.processBankReport(bankData);
+
     processedData.forEach(processedRow => {
-      const bankMatch = bankData.find(bankRow => 
-        bankRow.AUTORIZADOR === processedRow.AUTORIZADOR &&
-        bankRow.VENCIMENTO === processedRow.VENCIMENTO &&
-        bankRow.BANDEIRA === processedRow.BANDEIRA
-      );
+      // Busca correspondência pelos campos específicos
+      const bankMatch = processedBankData.find(bankRow => {
+        return (
+          this.normalizeString(bankRow.AUTORIZADOR) === this.normalizeString(processedRow.AUTORIZADOR) &&
+          this.normalizeDate(bankRow.VENDA) === this.normalizeDate(processedRow.VENDA) &&
+          this.normalizeDate(bankRow.VENCIMENTO) === this.normalizeDate(processedRow.VENCIMENTO) &&
+          this.normalizeString(bankRow.BANDEIRA) === this.normalizeString(processedRow.BANDEIRA) &&
+          bankRow.PARC === processedRow.PARC &&
+          bankRow.BRUTO === processedRow.BRUTO
+        );
+      });
 
       if (bankMatch) {
-        const issues: string[] = [];
-        
-        if (bankMatch.BRUTO !== processedRow.BRUTO) {
-          issues.push(`Valor BRUTO divergente: ${processedRow.BRUTO} vs ${bankMatch.BRUTO}`);
-        }
-        
-        if (bankMatch.TIPO !== processedRow.TIPO) {
-          issues.push(`TIPO divergente: ${processedRow.TIPO} vs ${bankMatch.TIPO}`);
-        }
-
-        if (issues.length > 0) {
-          discrepancies.push({ row: processedRow, issues });
+        // Se todos os campos obrigatórios forem iguais, verifica se TIPO também bate
+        if (this.normalizeString(bankMatch.TIPO) === this.normalizeString(processedRow.TIPO)) {
+          // Atualiza LIQUIDO e DESCONTO com os valores do banco
+          const updatedRow = {
+            ...processedRow,
+            LIQUIDO: bankMatch.LIQUIDO,
+            DESCONTO: bankMatch.DESCONTO
+          };
+          matched.push(updatedRow);
         } else {
-          matched.push(processedRow);
+          // TIPO não confere
+          discrepancies.push({
+            row: processedRow,
+            issues: [`TIPO/MODALIDADE divergente: ${processedRow.TIPO} vs ${bankMatch.TIPO}`]
+          });
         }
       } else {
         discrepancies.push({ 
           row: processedRow, 
-          issues: ['Transação não encontrada no relatório do banco'] 
+          issues: ['Transação não encontrada no relatório do banco ou dados não conferem'] 
         });
       }
     });
 
     return { matched, discrepancies };
+  }
+
+  // Função auxiliar para normalizar strings (case-insensitive)
+  static normalizeString(str?: string): string {
+    return (str || '').toString().trim().toLowerCase();
+  }
+
+  // Função auxiliar para normalizar datas
+  static normalizeDate(date?: string): string {
+    if (!date) return '';
+    
+    // Converte para formato padrão DD/MM/YYYY
+    try {
+      let normalizedDate = date.toString();
+      
+      // Se já está no formato DD/MM/YYYY, mantém
+      if (normalizedDate.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+        return normalizedDate;
+      }
+      
+      // Se está no formato YYYY-MM-DD, converte
+      if (normalizedDate.match(/^\d{4}-\d{2}-\d{2}/)) {
+        const [year, month, day] = normalizedDate.split('-');
+        return `${day}/${month}/${year}`;
+      }
+      
+      // Outros formatos podem ser adicionados aqui
+      return normalizedDate;
+    } catch (error) {
+      return date.toString();
+    }
   }
 
   static exportToExcel(data: TesteRow[], filename: string, highlightDiscrepancies?: Array<{ row: TesteRow; issues: string[] }>): void {
