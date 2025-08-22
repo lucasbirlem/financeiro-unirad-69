@@ -23,18 +23,39 @@ export class ExcelProcessor {
   }
 
   static convertRelCartoesToTeste(relCartoes: RelCartoesRow[]): TesteRow[] {
-    return relCartoes.map(row => ({
-      AUTORIZADOR: row.Autorizador || '',
-      VENDA: row.Entrada || '', // VENDA vem da coluna Entrada
-      VENCIMENTO: row.Vencimento || '',
-      TIPO: row.Tipo === 'DÉBITO' || row.Tipo === 'CRÉDITO' ? row.Tipo : '', // Apenas DÉBITO ou CRÉDITO
-      PARC: row.Parcela || 0,
-      QTDADE: 1, // Assumindo quantidade 1 por linha
-      BANDEIRA: row.Bandeira || '',
-      BRUTO: row.Valor || 0,
-      LIQUIDO: 0, // Inicialmente zerado conforme solicitado
-      DESCONTO: 0 // Inicialmente zerado conforme solicitado
-    }));
+    return relCartoes.map(row => {
+      // Mapeia as colunas conforme a estrutura real do arquivo
+      // Baseado nos logs, as colunas estão em __EMPTY, __EMPTY_1, etc.
+      const agenda = (row as any)['Relatório de Cartões'] || '';
+      const tipo = (row as any)['__EMPTY'] || '';
+      const entrada = (row as any)['__EMPTY_1'] || '';
+      const bandeira = (row as any)['__EMPTY_2'] || '';
+      const autorizador = (row as any)['__EMPTY_3'] || '';
+      const detalhes = (row as any)['__EMPTY_4'] || '';
+      const valorStr = (row as any)['__EMPTY_5'] || '0';
+      const parcelaStr = (row as any)['__EMPTY_6'] || '0';
+      const vencimento = (row as any)['__EMPTY_7'] || '';
+      const cliente = (row as any)['__EMPTY_8'] || '';
+
+      // Limpa e converte valores numéricos
+      const valor = parseFloat(valorStr.toString().replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+      const parcela = parseInt(parcelaStr.toString().replace(/[^\d]/g, '')) || 0;
+
+      return {
+        AUTORIZADOR: autorizador,
+        VENDA: entrada, // VENDA vem da coluna Entrada
+        VENCIMENTO: vencimento,
+        TIPO: tipo.includes('DÉBITO') || tipo.includes('CRÉDITO') ? 
+              (tipo.includes('DÉBITO') ? 'DÉBITO' : 'CRÉDITO') : 
+              (tipo.includes('Cartão de Crédito') ? 'CRÉDITO' : ''), // Trata "Cartão de Crédito" como CRÉDITO
+        PARC: parcela,
+        QTDADE: 1, // Assumindo quantidade 1 por linha
+        BANDEIRA: bandeira,
+        BRUTO: valor,
+        LIQUIDO: 0, // Inicialmente zerado conforme solicitado
+        DESCONTO: 0 // Inicialmente zerado conforme solicitado
+      };
+    });
   }
 
   static filterByDateRange(data: TesteRow[], startDate: string, endDate: string): TesteRow[] {

@@ -118,8 +118,8 @@ const Index = () => {
               <div className="p-3 rounded-full bg-primary/10">
                 <BarChart3 className="h-8 w-8 text-primary" />
               </div>
-              <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                Pivot Compare Pro
+              <h1 className="text-4xl font-bold text-foreground">
+                Financeiro Unirad
               </h1>
             </div>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
