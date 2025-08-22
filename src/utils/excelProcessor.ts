@@ -59,26 +59,27 @@ export class ExcelProcessor {
     });
   }
 
-  static filterByDateRange(data: TesteRow[], startDate: string, endDate: string): TesteRow[] {
+  static filterByDateRange(data: TesteRow[], startDate: string, endDate: string, filterType: 'venda' | 'vencimento' = 'venda'): TesteRow[] {
     if (!startDate || !endDate) return data;
     
     const start = new Date(startDate);
     const end = new Date(endDate);
     
     return data.filter(row => {
-      if (!row.VENDA) return false;
+      const dateField = filterType === 'venda' ? row.VENDA : row.VENCIMENTO;
+      if (!dateField) return false;
       
-      // Tenta diferentes formatos de data na coluna VENDA
+      // Tenta diferentes formatos de data
       let rowDate: Date;
       try {
-        if (row.VENDA.includes('/')) {
-          const [day, month, year] = row.VENDA.split('/');
+        if (dateField.includes('/')) {
+          const [day, month, year] = dateField.split('/');
           rowDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        } else if (row.VENDA.includes('-')) {
-          rowDate = new Date(row.VENDA);
+        } else if (dateField.includes('-')) {
+          rowDate = new Date(dateField);
         } else {
           // Tenta interpretar como timestamp ou outros formatos
-          rowDate = new Date(row.VENDA);
+          rowDate = new Date(dateField);
         }
         
         // Incluir a data final também (até 23:59:59 da data final)
@@ -86,7 +87,7 @@ export class ExcelProcessor {
         endOfDay.setHours(23, 59, 59, 999);
         return rowDate >= start && rowDate <= endOfDay;
       } catch (error) {
-        console.warn('Erro ao parsear data:', row.VENDA);
+        console.warn('Erro ao parsear data:', dateField);
         return false;
       }
     });

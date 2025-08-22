@@ -8,16 +8,19 @@ import { ComparisonResults } from '@/components/ComparisonResults';
 import { ExcelProcessor } from '@/utils/excelProcessor';
 import { RelCartoesRow, TesteRow } from '@/types/excel';
 import { useToast } from '@/hooks/use-toast';
+import { useReferenceData } from '@/hooks/useReferenceData';
 import { FileText, GitCompare, BarChart3 } from 'lucide-react';
 
 const Index = () => {
   const { toast } = useToast();
+  const { referenceData, isLoading, saveReferenceData } = useReferenceData();
   
-  // Modelo 1 - Conversão RelCartões para TESTE
+  // Modelo 1 - Conversão Otimus para Referência
   const [relCartoesFile, setRelCartoesFile] = useState<File>();
   const [testeFile, setTesteFile] = useState<File>();
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
+  const [filterType, setFilterType] = useState<'venda' | 'vencimento'>('venda');
   const [processedData, setProcessedData] = useState<TesteRow[]>();
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -34,7 +37,7 @@ const Index = () => {
     if (!relCartoesFile) {
       toast({
         title: "Erro",
-        description: "Selecione o arquivo RelCartõesDisponíveis",
+        description: "Selecione o arquivo gerado do Otimus",
         variant: "destructive",
       });
       return;
@@ -48,15 +51,30 @@ const Index = () => {
       let convertedData = ExcelProcessor.convertRelCartoesToTeste(relCartoesData);
       console.log('Dados convertidos:', convertedData.slice(0, 3)); // Debug
       
-      // Aplicar filtro de data se selecionado (filtra pela coluna VENDA)
+      // Salvar como referência se for o primeiro arquivo ou se não há referência
+      if (testeFile && !referenceData) {
+        try {
+          const referenceFileData = await ExcelProcessor.readExcelFile(testeFile) as TesteRow[];
+          await saveReferenceData(referenceFileData);
+          toast({
+            title: "Referência Salva",
+            description: "Arquivo de referência salvo no banco de dados",
+          });
+        } catch (error) {
+          console.error('Erro ao salvar referência:', error);
+        }
+      }
+      
+      // Aplicar filtro de data se selecionado
       if (startDate && endDate) {
         const beforeFilter = convertedData.length;
         convertedData = ExcelProcessor.filterByDateRange(
           convertedData,
           startDate.toISOString().split('T')[0],
-          endDate.toISOString().split('T')[0]
+          endDate.toISOString().split('T')[0],
+          filterType
         );
-        console.log(`Filtro aplicado: ${beforeFilter} → ${convertedData.length} registros`);
+        console.log(`Filtro aplicado (${filterType}): ${beforeFilter} → ${convertedData.length} registros`);
       }
 
       setProcessedData(convertedData);
@@ -145,28 +163,41 @@ const Index = () => {
               <Card className="p-6 shadow-elegant">
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-2xl font-semibold mb-2">Conversão RelCartões → TESTE</h2>
+                    <h2 className="text-2xl font-semibold mb-2">Conversão Otimus → Referência</h2>
                     <p className="text-muted-foreground">
-                      Converte arquivo RelCartõesDisponíveis para o formato TESTE com tratamento de dados específico
+                      Converte arquivo gerado do Otimus para a referência com tratamento de dados específico
                     </p>
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <FileUpload
-                      label="RelCartõesDisponíveis"
-                      description="Arquivo Excel com dados dos cartões disponíveis"
+                      label="Arquivo do Otimus"
+                      description="Arquivo Excel gerado pelo sistema Otimus"
                       onFileSelect={setRelCartoesFile}
                       selectedFile={relCartoesFile}
                       onRemoveFile={() => setRelCartoesFile(undefined)}
                     />
                     
-                    <FileUpload
-                      label="Arquivo TESTE (Referência)"
-                      description="Arquivo de referência com formato desejado (opcional)"
-                      onFileSelect={setTesteFile}
-                      selectedFile={testeFile}
-                      onRemoveFile={() => setTesteFile(undefined)}
-                    />
+                    {!referenceData && !isLoading && (
+                      <FileUpload
+                        label="Arquivo de Referência"
+                        description="Arquivo padrão de referência (será salvo para uso futuro)"
+                        onFileSelect={setTesteFile}
+                        selectedFile={testeFile}
+                        onRemoveFile={() => setTesteFile(undefined)}
+                      />
+                    )}
+                    
+                    {referenceData && (
+                      <Card className="p-4 bg-green-50 border-green-200">
+                        <div className="text-center">
+                          <div className="text-green-600 mb-2">✓ Referência Carregada</div>
+                          <div className="text-sm text-green-700">
+                            {referenceData.length} registros de referência disponíveis
+                          </div>
+                        </div>
+                      </Card>
+                    )}
                   </div>
 
                   <div>
@@ -176,6 +207,8 @@ const Index = () => {
                       endDate={endDate}
                       onStartDateChange={setStartDate}
                       onEndDateChange={setEndDate}
+                      filterType={filterType}
+                      onFilterTypeChange={setFilterType}
                     />
                   </div>
 

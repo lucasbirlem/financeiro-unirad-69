@@ -12,19 +12,54 @@ interface DateRangeSelectorProps {
   endDate?: Date;
   onStartDateChange: (date: Date | undefined) => void;
   onEndDateChange: (date: Date | undefined) => void;
+  filterType?: 'venda' | 'vencimento';
+  onFilterTypeChange?: (type: 'venda' | 'vencimento') => void;
 }
 
 export const DateRangeSelector = ({
   startDate,
   endDate,
   onStartDateChange,
-  onEndDateChange
+  onEndDateChange,
+  filterType = 'venda',
+  onFilterTypeChange
 }: DateRangeSelectorProps) => {
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-4">
+      {onFilterTypeChange && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Tipo de Filtro</label>
+          <div className="flex gap-4">
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                name="filterType"
+                value="venda"
+                checked={filterType === 'venda'}
+                onChange={() => onFilterTypeChange('venda')}
+                className="text-primary"
+              />
+              <span className="text-sm">Por Data de Entrada/Venda</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                name="filterType"
+                value="vencimento"
+                checked={filterType === 'vencimento'}
+                onChange={() => onFilterTypeChange('vencimento')}
+                className="text-primary"
+              />
+              <span className="text-sm">Por Data de Vencimento</span>
+            </label>
+          </div>
+        </div>
+      )}
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-2">
         <label className="text-sm font-medium">Data Inicial</label>
         <Popover open={startOpen} onOpenChange={setStartOpen}>
@@ -95,6 +130,7 @@ export const DateRangeSelector = ({
             />
           </PopoverContent>
         </Popover>
+      </div>
       </div>
     </div>
   );
