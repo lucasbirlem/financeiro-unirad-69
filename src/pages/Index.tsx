@@ -120,15 +120,27 @@ const Index = () => {
 
     setIsComparing(true);
     try {
+      console.log('=== INICIANDO PROCESSO MODELO 2 ===');
+      
       // Lê o arquivo processado (planilha normal)
+      console.log('1. Lendo arquivo processado...');
       const processedData = await ExcelProcessor.readExcelFile(processedFile) as TesteRow[];
+      console.log('Arquivo processado lido:', processedData.length, 'registros');
       
       // Lê especificamente a aba "DETALHADO" do relatório do banco
+      console.log('2. Lendo aba DETALHADO do relatório do banco...');
       const bankData = await ExcelProcessor.readExcelFile(bankFile, "DETALHADO");
+      console.log('Dados do banco lidos:', bankData.length, 'registros');
+      console.log('Primeiro registro do banco:', bankData[0]);
+      console.log('Colunas detectadas no banco:', Object.keys(bankData[0] || {}));
       
       // Valida a estrutura do relatório do banco
+      console.log('3. Validando estrutura do relatório do banco...');
       const validation = ExcelProcessor.validateBankReportStructure(bankData);
+      console.log('Resultado da validação:', validation);
+      
       if (!validation.isValid) {
+        console.error('Validação falhou. Colunas faltando:', validation.missingColumns);
         toast({
           title: "Erro de Estrutura",
           description: `Relatório do banco inválido. Colunas faltando: ${validation.missingColumns.join(', ')}`,
