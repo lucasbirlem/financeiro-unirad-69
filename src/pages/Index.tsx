@@ -120,8 +120,22 @@ const Index = () => {
 
     setIsComparing(true);
     try {
+      // Lê o arquivo processado (planilha normal)
       const processedData = await ExcelProcessor.readExcelFile(processedFile) as TesteRow[];
-      const bankData = await ExcelProcessor.readExcelFile(bankFile) as TesteRow[];
+      
+      // Lê especificamente a aba "DETALHADO" do relatório do banco
+      const bankData = await ExcelProcessor.readExcelFile(bankFile, "DETALHADO");
+      
+      // Valida a estrutura do relatório do banco
+      const validation = ExcelProcessor.validateBankReportStructure(bankData);
+      if (!validation.isValid) {
+        toast({
+          title: "Erro de Estrutura",
+          description: `Relatório do banco inválido. Colunas faltando: ${validation.missingColumns.join(', ')}`,
+          variant: "destructive",
+        });
+        return;
+      }
       
       const results = ExcelProcessor.compareWithBankReport(processedData, bankData);
       setComparisonResults(results);
@@ -133,7 +147,7 @@ const Index = () => {
     } catch (error) {
       toast({
         title: "Erro",
-        description: "Erro ao comparar arquivos: " + (error as Error).message,
+        description: `Erro ao processar arquivos: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         variant: "destructive",
       });
     } finally {
