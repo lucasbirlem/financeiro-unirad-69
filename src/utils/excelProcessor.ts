@@ -367,72 +367,70 @@ export class ExcelProcessor {
       return { isValid: false, missingColumns: ['Arquivo vazio'] };
     }
 
-    const requiredColumns = [
-      'AUTORIZAÇÃO',
-      'DATA DA VENDA', 
-      'DATA DE VENCIMENTO',
-      'BANDEIRA / MODALIDADE',
-      'PARCELAS',
-      'VALOR DA VENDA',
-      'VALOR DA PARCELA',
-      'DESCONTOS'
-    ];
-
     const firstRow = data[0];
     const availableColumns = Object.keys(firstRow);
     
-    console.log('Colunas disponíveis no banco:', availableColumns);
-    console.log('Colunas requeridas:', requiredColumns);
+    console.log('=== VALIDAÇÃO ESTRUTURA BANCO ===');
+    console.log('Colunas disponíveis:', availableColumns);
     
-    // Função para normalizar nomes de colunas (remove espaços extras, acentos, etc.)
-    const normalizeColumnName = (name: string): string => {
-      return name.toString()
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, ' ') // Remove espaços extras
-        .replace(/[àáâãäå]/g, 'a')
-        .replace(/[èéêë]/g, 'e')
-        .replace(/[ìíîï]/g, 'i')
-        .replace(/[òóôõö]/g, 'o')
-        .replace(/[ùúûü]/g, 'u')
-        .replace(/[ç]/g, 'c');
+    // Mapeamento flexível das colunas necessárias
+    const requiredMappings = {
+      'AUTORIZAÇÃO': ['AUTORIZAÇÃO', 'AUTORIZACAO', 'AUTORIZAÇÃO', 'AUTH', 'CODIGO AUTH'],
+      'DATA DA VENDA': ['DATA DA VENDA', 'DATA VENDA', 'DT VENDA', 'VENDA'],
+      'DATA DE VENCIMENTO': ['DATA DE VENCIMENTO', 'DATA VENCIMENTO', 'DT VENCIMENTO', 'VENCIMENTO'],
+      'BANDEIRA / MODALIDADE': ['BANDEIRA / MODALIDADE', 'BANDEIRA/MODALIDADE', 'BANDEIRA MODALIDADE', 'BANDEIRA'],
+      'PARCELAS': ['PARCELAS', 'PARCELA', 'QTD PARCELAS', 'QTDE PARCELAS'],
+      'VALOR DA VENDA': ['VALOR DA VENDA', 'VALOR VENDA', 'VLR VENDA', 'VALOR BRUTO'],
+      'VALOR DA PARCELA': ['VALOR DA PARCELA', 'VALOR PARCELA', 'VLR PARCELA', 'VALOR LÍQUIDO', 'VALOR LIQUIDADO'],
+      'DESCONTOS': ['DESCONTOS', 'DESCONTO', 'VLR DESCONTO', 'VALOR DESCONTO']
     };
 
-    const missingColumns = requiredColumns.filter(col => {
-      const normalizedRequired = normalizeColumnName(col);
-      const found = availableColumns.some(available => {
-        const normalizedAvailable = normalizeColumnName(available);
-        const isMatch = normalizedAvailable === normalizedRequired;
-        if (isMatch) {
-          console.log(`✓ Coluna encontrada: "${col}" → "${available}"`);
-        }
-        return isMatch;
-      });
+    const foundColumns: { [key: string]: string } = {};
+    const missingColumns: string[] = [];
+
+    // Para cada coluna necessária, tenta encontrar uma correspondência
+    Object.entries(requiredMappings).forEach(([required, variations]) => {
+      let found = false;
       
-      if (!found) {
-        console.log(`✗ Coluna não encontrada: "${col}"`);
-        // Tenta buscar por palavras-chave
-        const keywordFound = availableColumns.some(available => {
-          const availableNormalized = normalizeColumnName(available);
-          if (col === 'AUTORIZAÇÃO' && availableNormalized.includes('autoriza')) return true;
-          if (col === 'DATA DA VENDA' && availableNormalized.includes('data') && availableNormalized.includes('venda')) return true;
-          if (col === 'DATA DE VENCIMENTO' && availableNormalized.includes('data') && availableNormalized.includes('vencimento')) return true;
-          if (col === 'BANDEIRA / MODALIDADE' && (availableNormalized.includes('bandeira') || availableNormalized.includes('modalidade'))) return true;
-          if (col === 'PARCELAS' && availableNormalized.includes('parcela')) return true;
-          if (col === 'VALOR DA VENDA' && availableNormalized.includes('valor') && availableNormalized.includes('venda')) return true;
-          if (col === 'VALOR DA PARCELA' && availableNormalized.includes('valor') && availableNormalized.includes('parcela')) return true;
-          if (col === 'DESCONTOS' && availableNormalized.includes('desconto')) return true;
-          return false;
-        });
-        
-        if (keywordFound) {
-          console.log(`✓ Coluna encontrada por palavra-chave: "${col}"`);
-          return false; // Found by keyword
+      // Tenta encontrar correspondência exata primeiro
+      for (const variation of variations) {
+        const exactMatch = availableColumns.find(col => 
+          col.trim().toUpperCase() === variation.trim().toUpperCase()
+        );
+        if (exactMatch) {
+          foundColumns[required] = exactMatch;
+          found = true;
+          console.log(`✓ ${required} → ${exactMatch}`);
+          break;
         }
       }
       
-      return !found;
+      // Se não encontrou correspondência exata, tenta busca por palavras-chave
+      if (!found) {
+        for (const variation of variations) {
+          const keywordMatch = availableColumns.find(col => {
+            const colNormalized = col.trim().toUpperCase();
+            const variationWords = variation.trim().toUpperCase().split(/\s+/);
+            return variationWords.every(word => colNormalized.includes(word));
+          });
+          
+          if (keywordMatch) {
+            foundColumns[required] = keywordMatch;
+            found = true;
+            console.log(`✓ ${required} → ${keywordMatch} (por palavra-chave)`);
+            break;
+          }
+        }
+      }
+      
+      if (!found) {
+        missingColumns.push(required);
+        console.log(`✗ ${required} - não encontrada`);
+      }
     });
+
+    console.log('Colunas encontradas:', Object.keys(foundColumns));
+    console.log('Colunas faltando:', missingColumns);
 
     return {
       isValid: missingColumns.length === 0,
