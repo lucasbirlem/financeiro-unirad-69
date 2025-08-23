@@ -29,7 +29,49 @@ export class ExcelProcessor {
           }
           
           const worksheet = workbook.Sheets[targetSheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+          let jsonData: any[];
+          
+          // Para aba DETALHADO, tenta diferentes estratégias de leitura
+          if (targetSheetName && targetSheetName.toLowerCase().includes('detalhado')) {
+            console.log('Lendo aba DETALHADO com estratégia especial...');
+            
+            // Estratégia 1: Lê com cabeçalho na linha 1
+            let rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            console.log('Dados brutos (primeiras 5 linhas):', rawData.slice(0, 5));
+            
+            // Procura pela linha que contém os cabeçalhos reais
+            let headerRowIndex = -1;
+            for (let i = 0; i < Math.min(10, rawData.length); i++) {
+              const row = rawData[i] as any[];
+              if (row && row.some(cell => 
+                cell && typeof cell === 'string' && 
+                (cell.includes('AUTORIZAÇÃO') || cell.includes('DATA DA VENDA') || cell.includes('BANDEIRA'))
+              )) {
+                headerRowIndex = i;
+                console.log(`Encontrou cabeçalhos na linha ${i + 1}:`, row);
+                break;
+              }
+            }
+            
+            if (headerRowIndex >= 0) {
+              // Re-lê usando a linha correta como cabeçalho
+              const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+              range.s.r = headerRowIndex; // Começa da linha do cabeçalho
+              const newRef = XLSX.utils.encode_range(range);
+              const newWorksheet = { ...worksheet, '!ref': newRef };
+              
+              jsonData = XLSX.utils.sheet_to_json(newWorksheet);
+              console.log(`Dados re-processados com cabeçalho correto (${jsonData.length} registros)`);
+              console.log('Primeiro registro:', jsonData[0]);
+            } else {
+              // Fallback: usar json normal
+              jsonData = XLSX.utils.sheet_to_json(worksheet);
+            }
+          } else {
+            // Para outras abas, leitura normal
+            jsonData = XLSX.utils.sheet_to_json(worksheet);
+          }
+          
           console.log(`Arquivo lido da aba "${targetSheetName}" com ${jsonData.length} registros`);
           resolve(jsonData);
         } catch (error) {
