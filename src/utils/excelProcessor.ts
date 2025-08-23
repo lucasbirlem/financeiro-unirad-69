@@ -163,38 +163,32 @@ export class ExcelProcessor {
         console.log('Primeira linha do banco:', Object.keys(row));
       }
       
-      // Mapeia as colunas do relatório do banco para o formato TesteRow - busca flexível
-      const getColumnValue = (possibleNames: string[]) => {
-        // Primeiro tenta busca exata
-        for (const name of possibleNames) {
-          if (row[name] !== undefined) return row[name];
-        }
-        
-        // Busca por palavras-chave se não encontrar nome exato
-        const allKeys = Object.keys(row);
-        for (const key of allKeys) {
-          const normalizedKey = key.toLowerCase().trim();
-          for (const possibleName of possibleNames) {
-            const normalizedPossible = possibleName.toLowerCase().trim();
-            if (normalizedKey.includes(normalizedPossible.replace(/\s+/g, ' ')) || 
-                normalizedPossible.includes(normalizedKey)) {
-              console.log(`✓ Mapeou coluna: "${key}" → ${possibleNames[0]}`);
-              return row[key];
-            }
-          }
-        }
-        console.log(`✗ Não encontrou coluna para: ${possibleNames[0]} - tentativas: ${possibleNames.join(', ')}`);
-        return '';
-      };
+      // Log das colunas disponíveis para debug
+      if (index === 0) {
+        console.log('Dados do banco lidos:', bankData.length, 'registros');
+        console.log('Primeiro registro do banco:', row);
+        console.log('Colunas detectadas no banco:', Object.keys(row));
+      }
 
-      const autorizacao = getColumnValue(['AUTORIZAÇÃO', 'AUTORIZACAO', 'AUTORIZAÇÃO', 'AUTORIZADOR']);
-      const dataVenda = getColumnValue(['DATA DA VENDA', 'DATA VENDA']);
-      const dataVencimento = getColumnValue(['DATA DE VENCIMENTO', 'DATA VENCIMENTO']);
-      const bandeiraModalidade = getColumnValue(['BANDEIRA / MODALIDADE', 'BANDEIRA/MODALIDADE', 'BANDEIRA MODALIDADE']);
-      const parcelas = getColumnValue(['PARCELAS', 'PARCELA']) || 0;
-      const valorVenda = getColumnValue(['VALOR DA VENDA', 'VALOR VENDA']) || 0;
-      const valorParcela = getColumnValue(['VALOR DA PARCELA', 'VALOR PARCELA']) || 0;
-      const descontos = getColumnValue(['DESCONTOS', 'DESCONTO']) || 0;
+      // Mapeia EXATAMENTE as colunas conforme o usuário especificou:
+      // Relatório do banco → Arquivo Processado
+      // AUTORIZAÇÃO → AUTORIZADOR
+      // DATA DA VENDA → VENDA  
+      // DATA DE VENCIMENTO → VENCIMENTO
+      // BANDEIRA / MODALIDADE → dividir em BANDEIRA e TIPO
+      // PARCELAS → PARC
+      // VALOR DA VENDA → BRUTO
+      // VALOR DA PARCELA → LIQUIDO
+      // DESCONTOS → DESCONTO
+
+      const autorizacao = row['AUTORIZAÇÃO'] || row['AUTORIZACAO'] || '';
+      const dataVenda = row['DATA DA VENDA'] || '';
+      const dataVencimento = row['DATA DE VENCIMENTO'] || '';
+      const bandeiraModalidade = row['BANDEIRA / MODALIDADE'] || '';
+      const parcelas = row['PARCELAS'] || 0;
+      const valorVenda = row['VALOR DA VENDA'] || 0;
+      const valorParcela = row['VALOR DA PARCELA'] || 0;
+      const descontos = row['DESCONTOS'] || 0;
 
       // Validação de dados obrigatórios
       if (!autorizacao || !dataVenda || !dataVencimento || !bandeiraModalidade || !valorVenda) {
