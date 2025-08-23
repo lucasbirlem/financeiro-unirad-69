@@ -123,6 +123,7 @@ export class ExcelProcessor {
       
       // Mapeia as colunas do relatório do banco para o formato TesteRow - busca flexível
       const getColumnValue = (possibleNames: string[]) => {
+        // Primeiro tenta busca exata
         for (const name of possibleNames) {
           if (row[name] !== undefined) return row[name];
         }
@@ -133,15 +134,18 @@ export class ExcelProcessor {
           const normalizedKey = key.toLowerCase().trim();
           for (const possibleName of possibleNames) {
             const normalizedPossible = possibleName.toLowerCase().trim();
-            if (normalizedKey.includes(normalizedPossible.replace(/\s+/g, ' '))) {
+            if (normalizedKey.includes(normalizedPossible.replace(/\s+/g, ' ')) || 
+                normalizedPossible.includes(normalizedKey)) {
+              console.log(`✓ Mapeou coluna: "${key}" → ${possibleNames[0]}`);
               return row[key];
             }
           }
         }
+        console.log(`✗ Não encontrou coluna para: ${possibleNames[0]} - tentativas: ${possibleNames.join(', ')}`);
         return '';
       };
 
-      const autorizacao = getColumnValue(['AUTORIZAÇÃO', 'AUTORIZACAO', 'AUTORIZAÇÃO']);
+      const autorizacao = getColumnValue(['AUTORIZAÇÃO', 'AUTORIZACAO', 'AUTORIZAÇÃO', 'AUTORIZADOR']);
       const dataVenda = getColumnValue(['DATA DA VENDA', 'DATA VENDA']);
       const dataVencimento = getColumnValue(['DATA DE VENCIMENTO', 'DATA VENCIMENTO']);
       const bandeiraModalidade = getColumnValue(['BANDEIRA / MODALIDADE', 'BANDEIRA/MODALIDADE', 'BANDEIRA MODALIDADE']);
