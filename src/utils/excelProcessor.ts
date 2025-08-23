@@ -157,74 +157,78 @@ export class ExcelProcessor {
   static processBankReport(bankData: any[]): TesteRow[] {
     console.log('Processando relatório do banco com', bankData.length, 'registros');
     
-    return bankData.map((row, index) => {
-      // Log da primeira linha para debug
-      if (index === 0) {
-        console.log('Primeira linha do banco:', Object.keys(row));
+    // FILTRAR APENAS TRANSAÇÕES VÁLIDAS (não "Saldo Anterior", etc.)
+    const validTransactions = bankData.filter((row, index) => {
+      const autorizacao = row['AUTORIZAÇÃO'] || '';
+      const tipoLancamento = row['TIPO DE LANÇAMENTO'] || '';
+      const valorVenda = row['VALOR DA VENDA'] || 0;
+      
+      const isValid = autorizacao && 
+                     autorizacao !== '-' && 
+                     !tipoLancamento.includes('Saldo') &&
+                     valorVenda && 
+                     valorVenda !== '-' &&
+                     parseFloat(valorVenda.toString()) > 0;
+      
+      if (index < 5) {
+        console.log(`Linha ${index + 1}: ${isValid ? 'VÁLIDA' : 'INVÁLIDA'} - Auth: "${autorizacao}", Tipo: "${tipoLancamento}"`);
       }
       
-      // Log das colunas disponíveis para debug
-      if (index === 0) {
-        console.log('Dados do banco lidos:', bankData.length, 'registros');
-        console.log('Primeiro registro do banco:', row);
-        console.log('Colunas detectadas no banco:', Object.keys(row));
-      }
-
-      // Mapeia EXATAMENTE as colunas conforme o usuário especificou:
-      // Relatório do banco → Arquivo Processado
-      // AUTORIZAÇÃO → AUTORIZADOR
-      // DATA DA VENDA → VENDA  
-      // DATA DE VENCIMENTO → VENCIMENTO
-      // BANDEIRA / MODALIDADE → dividir em BANDEIRA e TIPO
-      // PARCELAS → PARC
-      // VALOR DA VENDA → BRUTO
-      // VALOR DA PARCELA → LIQUIDO
-      // DESCONTOS → DESCONTO
-
-      const autorizacao = row['AUTORIZAÇÃO'] || row['AUTORIZACAO'] || '';
+      return isValid;
+    });
+    
+    console.log(`Filtradas ${validTransactions.length} transações válidas de ${bankData.length} registros`);
+    
+    return validTransactions.map((row, index) => {
+      const autorizacao = row['AUTORIZAÇÃO'] || '';
       const dataVenda = row['DATA DA VENDA'] || '';
       const dataVencimento = row['DATA DE VENCIMENTO'] || '';
       const bandeiraModalidade = row['BANDEIRA / MODALIDADE'] || '';
-      const parcelas = row['PARCELAS'] || 0;
+      const parcelas = row['PARCELAS'] || '';
       const valorVenda = row['VALOR DA VENDA'] || 0;
       const valorParcela = row['VALOR DA PARCELA'] || 0;
       const descontos = row['DESCONTOS'] || 0;
 
-      // Validação de dados obrigatórios
-      if (!autorizacao || !dataVenda || !dataVencimento || !bandeiraModalidade || !valorVenda) {
-        console.warn(`Linha ${index + 1}: dados obrigatórios faltando`, {
-          autorizacao: !!autorizacao,
-          dataVenda: !!dataVenda,
-          dataVencimento: !!dataVencimento,
-          bandeiraModalidade: !!bandeiraModalidade,
-          valorVenda: !!valorVenda
-        });
+      // TRATAR PARCELAS "1 de 1" → pegar apenas o primeiro número
+      let parcelaNumber = 1;
+      if (parcelas && parcelas !== '-') {
+        const parcelaStr = parcelas.toString().trim();
+        if (parcelaStr.includes(' de ')) {
+          parcelaNumber = parseInt(parcelaStr.split(' de ')[0]) || 1;
+        } else {
+          parcelaNumber = parseInt(parcelaStr) || 1;
+        }
       }
 
-      // Separa BANDEIRA e MODALIDADE (TIPO) com parsing mais robusto
+      // Separar BANDEIRA e TIPO
       const bandeiraModalidadeLimpa = bandeiraModalidade.toString().trim();
-      const palavras = bandeiraModalidadeLimpa.split(/\s+/); // Split por qualquer quantidade de espaços
+      const palavras = bandeiraModalidadeLimpa.split(/\s+/);
       const bandeira = palavras[0] || '';
-      const tipo = palavras.slice(1).join(' ') || ''; // Junta todas as palavras restantes
+      const tipo = palavras.slice(1).join(' ') || '';
 
-      // Log para debug da separação
-      if (index < 3) {
-        console.log(`Linha ${index + 1} - "${bandeiraModalidadeLimpa}" → BANDEIRA: "${bandeira.toUpperCase()}", TIPO: "${tipo.toUpperCase()}"`);
-      }
+      // NORMALIZAR DATAS EXCEL (números) para DD/MM/YYYY
+      const vendaNormalizada = this.convertExcelDate(dataVenda);
+      const vencimentoNormalizado = this.convertExcelDate(dataVencimento);
 
-      return {
+      const processedRow = {
         AUTORIZADOR: autorizacao.toString().trim(),
-        VENDA: this.normalizeDate(dataVenda.toString()),
-        VENCIMENTO: this.normalizeDate(dataVencimento.toString()),
+        VENDA: vendaNormalizada,
+        VENCIMENTO: vencimentoNormalizado,
         TIPO: tipo.toUpperCase().trim(),
-        PARC: this.parseNumber(parcelas),
+        PARC: parcelaNumber,
         QTDADE: 1,
         BANDEIRA: bandeira.toUpperCase().trim(),
         BRUTO: this.parseMonetaryValue(valorVenda),
         LIQUIDO: this.parseMonetaryValue(valorParcela),
         DESCONTO: this.parseMonetaryValue(descontos)
       };
-    }).filter(row => row.AUTORIZADOR && row.BANDEIRA); // Filtra registros inválidos
+
+      if (index < 3) {
+        console.log(`Banco processado ${index + 1}:`, processedRow);
+      }
+
+      return processedRow;
+    })
   }
 
   static compareWithBankReport(processedData: TesteRow[], bankData: any[]): {
@@ -399,6 +403,32 @@ export class ExcelProcessor {
     
     // Se tem apenas ponto, trata como separador decimal
     return parseFloat(cleaned) || 0;
+  }
+
+  // Função para converter datas do Excel (números) para formato DD/MM/YYYY
+  static convertExcelDate(excelDate: any): string {
+    if (!excelDate || excelDate === '-') return '';
+    
+    // Se já é string no formato correto, retorna
+    if (typeof excelDate === 'string' && excelDate.includes('/')) {
+      return this.normalizeDate(excelDate);
+    }
+    
+    // Se é número (formato Excel)
+    if (typeof excelDate === 'number') {
+      // Excel conta a partir de 1900-01-01 (mas tem bug em 1900 que o Excel considera ano bissexto)
+      const excelStartDate = new Date(1900, 0, 1);
+      const actualDate = new Date(excelStartDate.getTime() + (excelDate - 2) * 24 * 60 * 60 * 1000);
+      
+      const day = actualDate.getDate().toString().padStart(2, '0');
+      const month = (actualDate.getMonth() + 1).toString().padStart(2, '0');
+      const year = actualDate.getFullYear().toString();
+      
+      return `${day}/${month}/${year}`;
+    }
+    
+    // Fallback: tenta normalizar como string
+    return this.normalizeDate(excelDate.toString());
   }
 
   // Função para validar estrutura de arquivo do banco
