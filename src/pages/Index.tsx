@@ -20,7 +20,6 @@ const Index = () => {
   
   // Modelo 1 - Conversão Otimus para Referência
   const [relCartoesFile, setRelCartoesFile] = useState<File>();
-  const [testeFile, setTesteFile] = useState<File>();
   const [vendaStartDate, setVendaStartDate] = useState<Date>();
   const [vendaEndDate, setVendaEndDate] = useState<Date>();
   const [processedData, setProcessedData] = useState<TesteRow[]>();
@@ -55,19 +54,6 @@ const Index = () => {
       let convertedData = ExcelProcessor.convertRelCartoesToTeste(relCartoesData);
       console.log('Dados convertidos:', convertedData.slice(0, 3)); // Debug
       
-      // Salvar arquivo de referência se fornecido
-      if (testeFile && !referenceData) {
-        try {
-          const referenceFileData = await ExcelProcessor.readExcelFile(testeFile) as TesteRow[];
-          await saveReferenceData(referenceFileData);
-          toast({
-            title: "Referência Salva",
-            description: "Arquivo de referência salvo no banco de dados",
-          });
-        } catch (error) {
-          console.error('Erro ao salvar referência:', error);
-        }
-      }
       
       // Aplicar filtros de data se selecionados
       const beforeFilter = convertedData.length;
@@ -248,23 +234,13 @@ const Index = () => {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <FileUpload
-                      label="Arquivo do Otimus"
-                      description="Arquivo Excel gerado pelo sistema Otimus"
-                      onFileSelect={setRelCartoesFile}
-                      selectedFile={relCartoesFile}
-                      onRemoveFile={() => setRelCartoesFile(undefined)}
-                    />
-                    
-                    <FileUpload
-                      label="Arquivo de Referência"
-                      description="Arquivo padrão de referência (opcional)"
-                      onFileSelect={setTesteFile}
-                      selectedFile={testeFile}
-                      onRemoveFile={() => setTesteFile(undefined)}
-                    />
-                  </div>
+                  <FileUpload
+                    label="Arquivo do Otimus"
+                    description="Arquivo Excel gerado pelo sistema Otimus"
+                    onFileSelect={setRelCartoesFile}
+                    selectedFile={relCartoesFile}
+                    onRemoveFile={() => setRelCartoesFile(undefined)}
+                  />
 
                   <div>
                     <h3 className="text-lg font-medium mb-4">Filtro por Período (Opcional)</h3>
