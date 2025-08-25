@@ -327,19 +327,25 @@ export class ExcelProcessor {
     processedData.forEach((processedRow, index) => {
       const issues: string[] = [];
       
-      // Busca correspondência pelos 6 campos obrigatórios (excluindo VENCIMENTO)
+      // Busca correspondência pelos campos obrigatórios
       const bankMatch = processedBankData.find(bankRow => {
         // Para Vero, remove zeros à esquerda na comparação do AUTORIZADOR
         const autorizadorMatch = bankType === 'vero' 
           ? parseInt(this.normalizeString(bankRow.AUTORIZADOR) || '0') === parseInt(this.normalizeString(processedRow.AUTORIZADOR) || '0')
           : this.normalizeString(bankRow.AUTORIZADOR) === this.normalizeString(processedRow.AUTORIZADOR);
         const vendaMatch = this.normalizeDate(bankRow.VENDA) === this.normalizeDate(processedRow.VENDA);
-        const bandeiraMatch = this.normalizeString(bankRow.BANDEIRA) === this.normalizeString(processedRow.BANDEIRA);
-        const tipoMatch = this.normalizeString(bankRow.TIPO) === this.normalizeString(processedRow.TIPO);
         const parcMatch = bankRow.PARC === processedRow.PARC;
         const brutoMatch = Math.abs((bankRow.BRUTO || 0) - (processedRow.BRUTO || 0)) < 0.01; // Tolerância para valores monetários
         
-        return autorizadorMatch && vendaMatch && bandeiraMatch && tipoMatch && parcMatch && brutoMatch;
+        if (bankType === 'vero') {
+          // Para Vero, só compara os 4 campos especificados
+          return autorizadorMatch && vendaMatch && parcMatch && brutoMatch;
+        } else {
+          // Para Getnet, compara todos os 6 campos
+          const bandeiraMatch = this.normalizeString(bankRow.BANDEIRA) === this.normalizeString(processedRow.BANDEIRA);
+          const tipoMatch = this.normalizeString(bankRow.TIPO) === this.normalizeString(processedRow.TIPO);
+          return autorizadorMatch && vendaMatch && bandeiraMatch && tipoMatch && parcMatch && brutoMatch;
+        }
       });
 
       if (bankMatch) {
@@ -375,12 +381,17 @@ export class ExcelProcessor {
             if (this.normalizeDate(bankRow.VENDA) !== this.normalizeDate(processedRow.VENDA)) {
               issues.push(`DATA DA VENDA divergente: ${processedRow.VENDA} vs ${bankRow.VENDA}`);
             }
-            if (this.normalizeString(bankRow.BANDEIRA) !== this.normalizeString(processedRow.BANDEIRA)) {
-              issues.push(`BANDEIRA divergente: ${processedRow.BANDEIRA} vs ${bankRow.BANDEIRA}`);
+            
+            if (bankType !== 'vero') {
+              // Para Getnet, verifica BANDEIRA e TIPO
+              if (this.normalizeString(bankRow.BANDEIRA) !== this.normalizeString(processedRow.BANDEIRA)) {
+                issues.push(`BANDEIRA divergente: ${processedRow.BANDEIRA} vs ${bankRow.BANDEIRA}`);
+              }
+              if (this.normalizeString(bankRow.TIPO) !== this.normalizeString(processedRow.TIPO)) {
+                issues.push(`TIPO divergente: ${processedRow.TIPO} vs ${bankRow.TIPO}`);
+              }
             }
-            if (this.normalizeString(bankRow.TIPO) !== this.normalizeString(processedRow.TIPO)) {
-              issues.push(`TIPO divergente: ${processedRow.TIPO} vs ${bankRow.TIPO}`);
-            }
+            
             if (bankRow.PARC !== processedRow.PARC) {
               issues.push(`PARCELAS divergente: ${processedRow.PARC} vs ${bankRow.PARC}`);
             }
