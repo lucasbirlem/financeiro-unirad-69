@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { FileUpload } from '@/components/FileUpload';
 import { DateRangeSelector } from '@/components/DateRangeSelector';
 import { ComparisonResults } from '@/components/ComparisonResults';
@@ -26,6 +28,7 @@ const Index = () => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Modelo 2 - Comparação com banco
+  const [bankType, setBankType] = useState<'getnet' | 'vero' | ''>('');
   const [processedFile, setProcessedFile] = useState<File>();
   const [bankFile, setBankFile] = useState<File>();
   const [vencimentoStartDate, setVencimentoStartDate] = useState<Date>();
@@ -86,6 +89,15 @@ const Index = () => {
   };
 
   const handleModel2Process = async () => {
+    if (!bankType) {
+      toast({
+        title: "Erro",
+        description: "Selecione o tipo do banco (Getnet ou Vero)",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!processedFile || !bankFile) {
       toast({
         title: "Erro",
@@ -278,14 +290,32 @@ const Index = () => {
             <TabsContent value="model2" className="space-y-6">
               <Card className="p-6 shadow-elegant">
                 <div className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-semibold mb-2">Comparação com Relatório do Banco</h2>
-                    <p className="text-muted-foreground">
-                      Compara arquivo processado com relatório do banco e destaca divergências
-                    </p>
-                  </div>
+                   <div>
+                     <h2 className="text-2xl font-semibold mb-2">Comparação com Relatório do Banco</h2>
+                     <p className="text-muted-foreground">
+                       Compara arquivo processado com relatório do banco e destaca divergências
+                     </p>
+                   </div>
 
-                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                   <div>
+                     <h3 className="text-lg font-medium mb-4">Tipo do Banco</h3>
+                     <RadioGroup 
+                       value={bankType} 
+                       onValueChange={(value: 'getnet' | 'vero') => setBankType(value)}
+                       className="flex gap-6"
+                     >
+                       <div className="flex items-center space-x-2">
+                         <RadioGroupItem value="getnet" id="getnet" />
+                         <Label htmlFor="getnet">Getnet</Label>
+                       </div>
+                       <div className="flex items-center space-x-2">
+                         <RadioGroupItem value="vero" id="vero" />
+                         <Label htmlFor="vero">Vero</Label>
+                       </div>
+                     </RadioGroup>
+                   </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <FileUpload
                       label="Arquivo Processado"
                       description="Resultado do Modelo 1 ou arquivo no formato TESTE"
@@ -314,12 +344,12 @@ const Index = () => {
                     />
                   </div>
 
-                  <Button 
-                    onClick={handleModel2Process}
-                    disabled={!processedFile || !bankFile || isComparing}
-                    className="w-full"
-                    size="lg"
-                  >
+                   <Button 
+                     onClick={handleModel2Process}
+                     disabled={!bankType || !processedFile || !bankFile || isComparing}
+                     className="w-full"
+                     size="lg"
+                   >
                     {isComparing ? "Comparando..." : "Executar Comparação"}
                   </Button>
                 </div>
