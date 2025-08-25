@@ -127,15 +127,16 @@ export class ExcelProcessor {
     console.log('Data inicial recebida:', startDate);
     console.log('Data final recebida:', endDate);
     
-    // Configurar corretamente o início e fim do período
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0); // Início do dia da data inicial
+    // Converte as datas de entrada (formato YYYY-MM-DD) para Date
+    // Parse manual para evitar problemas de timezone
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
     
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999); // Final do dia da data final
+    const start = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
+    const end = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
     
-    console.log('Data inicial processada:', start.toISOString());
-    console.log('Data final processada:', end.toISOString());
+    console.log('Data inicial processada:', start.toISOString(), 'Local:', start.toLocaleDateString('pt-BR'));
+    console.log('Data final processada:', end.toISOString(), 'Local:', end.toLocaleDateString('pt-BR'));
     
     const filteredData = data.filter((row, index) => {
       // Para o modelo 2, usa a data VENDA (que vem da coluna ENTRADA do Otimus)
@@ -143,30 +144,42 @@ export class ExcelProcessor {
       const dateField = filterType === 'venda' ? row.VENDA : row.VENCIMENTO;
       if (!dateField) return false;
       
-      // Tenta diferentes formatos de data
+      // Parse manual da data do registro para evitar problemas de timezone
       let rowDate: Date;
       try {
         if (dateField.includes('/')) {
-          const [day, month, year] = dateField.split('/');
-          rowDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-          rowDate.setHours(12, 0, 0, 0); // Meio-dia para evitar problemas de timezone
+          const [day, month, year] = dateField.split('/').map(Number);
+          // Cria a data com horário meio-dia para evitar problemas de timezone
+          rowDate = new Date(year, month - 1, day, 12, 0, 0, 0);
         } else if (dateField.includes('-')) {
-          rowDate = new Date(dateField);
+          const [year, month, day] = dateField.split('-').map(Number);
+          rowDate = new Date(year, month - 1, day, 12, 0, 0, 0);
         } else {
           // Tenta interpretar como timestamp ou outros formatos
           rowDate = new Date(dateField);
+          // Se deu certo, define horário meio-dia
+          if (!isNaN(rowDate.getTime())) {
+            rowDate.setHours(12, 0, 0, 0);
+          }
+        }
+        
+        // Verifica se a data é válida
+        if (isNaN(rowDate.getTime())) {
+          console.warn('Data inválida:', dateField);
+          return false;
         }
         
         const isInRange = rowDate >= start && rowDate <= end;
         
-        // Debug apenas para os primeiros registros e os que passam no filtro
-        if (index < 5 || isInRange) {
-          console.log(`Registro ${index}: Data original="${dateField}", Data parseada="${rowDate.toISOString()}", Incluído=${isInRange}`);
+        // Debug detalhado para entender o problema
+        if (index < 10 || isInRange) {
+          console.log(`Registro ${index}: Data original="${dateField}", Data parseada="${rowDate.toISOString()}", Local="${rowDate.toLocaleDateString('pt-BR')}", Incluído=${isInRange}`);
+          console.log(`  Comparação: ${rowDate.getTime()} >= ${start.getTime()} && ${rowDate.getTime()} <= ${end.getTime()}`);
         }
         
         return isInRange;
       } catch (error) {
-        console.warn('Erro ao parsear data:', dateField);
+        console.warn('Erro ao parsear data:', dateField, error);
         return false;
       }
     });
