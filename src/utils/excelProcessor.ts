@@ -329,7 +329,10 @@ export class ExcelProcessor {
       
       // Busca correspondência pelos 6 campos obrigatórios (excluindo VENCIMENTO)
       const bankMatch = processedBankData.find(bankRow => {
-        const autorizadorMatch = this.normalizeString(bankRow.AUTORIZADOR) === this.normalizeString(processedRow.AUTORIZADOR);
+        // Para Vero, remove zeros à esquerda na comparação do AUTORIZADOR
+        const autorizadorMatch = bankType === 'vero' 
+          ? parseInt(this.normalizeString(bankRow.AUTORIZADOR) || '0') === parseInt(this.normalizeString(processedRow.AUTORIZADOR) || '0')
+          : this.normalizeString(bankRow.AUTORIZADOR) === this.normalizeString(processedRow.AUTORIZADOR);
         const vendaMatch = this.normalizeDate(bankRow.VENDA) === this.normalizeDate(processedRow.VENDA);
         const bandeiraMatch = this.normalizeString(bankRow.BANDEIRA) === this.normalizeString(processedRow.BANDEIRA);
         const tipoMatch = this.normalizeString(bankRow.TIPO) === this.normalizeString(processedRow.TIPO);
@@ -360,7 +363,9 @@ export class ExcelProcessor {
       } else {
         // Verifica quais campos não conferem para diagnóstico detalhado
         const potentialMatches = processedBankData.filter(bankRow => 
-          this.normalizeString(bankRow.AUTORIZADOR) === this.normalizeString(processedRow.AUTORIZADOR)
+          bankType === 'vero' 
+            ? parseInt(this.normalizeString(bankRow.AUTORIZADOR) || '0') === parseInt(this.normalizeString(processedRow.AUTORIZADOR) || '0')
+            : this.normalizeString(bankRow.AUTORIZADOR) === this.normalizeString(processedRow.AUTORIZADOR)
         );
         
         if (potentialMatches.length === 0) {
