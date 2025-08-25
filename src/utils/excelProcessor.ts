@@ -123,8 +123,12 @@ export class ExcelProcessor {
   static filterByDateRange(data: TesteRow[], startDate: string, endDate: string, filterType: 'venda' | 'vencimento' = 'venda'): TesteRow[] {
     if (!startDate || !endDate) return data;
     
+    // Configurar corretamente o início e fim do período
     const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0); // Início do dia da data inicial
+    
     const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999); // Final do dia da data final
     
     return data.filter(row => {
       const dateField = filterType === 'venda' ? row.VENDA : row.VENCIMENTO;
@@ -143,10 +147,8 @@ export class ExcelProcessor {
           rowDate = new Date(dateField);
         }
         
-        // Incluir a data final também (até 23:59:59 da data final)
-        const endOfDay = new Date(end);
-        endOfDay.setHours(23, 59, 59, 999);
-        return rowDate >= start && rowDate <= endOfDay;
+        // Agora inclui corretamente desde o início da data inicial até o final da data final
+        return rowDate >= start && rowDate <= end;
       } catch (error) {
         console.warn('Erro ao parsear data:', dateField);
         return false;

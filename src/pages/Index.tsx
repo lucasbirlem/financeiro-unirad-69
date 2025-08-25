@@ -158,8 +158,9 @@ const Index = () => {
 
   const handleResetModel1 = () => {
     setRelCartoesFile(undefined);
-    setVendaStartDate(undefined);
-    setVendaEndDate(undefined);
+    // Manter as datas selecionadas para facilitar uso contínuo
+    // setVendaStartDate(undefined);
+    // setVendaEndDate(undefined);
     setProcessedData(undefined);
   };
 
