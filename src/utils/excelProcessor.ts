@@ -114,7 +114,7 @@ export class ExcelProcessor {
         QTDADE: 1, // Assumindo quantidade 1 por linha
         BANDEIRA: bandeira,
         BRUTO: valor,
-        LIQUIDO: 0, // Inicialmente zerado conforme solicitado
+        LÍQUIDO: 0, // Inicialmente zerado conforme solicitado
         DESCONTO: 0 // Inicialmente zerado conforme solicitado
       };
     });
@@ -138,6 +138,8 @@ export class ExcelProcessor {
     console.log('Data final processada:', end.toISOString());
     
     const filteredData = data.filter((row, index) => {
+      // Para o modelo 2, usa a data VENDA (que vem da coluna ENTRADA do Otimus)
+      // Para outros casos, usa o campo especificado no filterType
       const dateField = filterType === 'venda' ? row.VENDA : row.VENCIMENTO;
       if (!dateField) return false;
       
@@ -228,19 +230,21 @@ export class ExcelProcessor {
       const tipo = palavras.slice(1).join(' ') || '';
 
       // NORMALIZAR DATAS EXCEL (números) para DD/MM/YYYY
+      const dataEntrada = row['ENTRADA'] || '';
+      const entradaNormalizada = this.convertExcelDate(dataEntrada);
       const vendaNormalizada = this.convertExcelDate(dataVenda);
       const vencimentoNormalizado = this.convertExcelDate(dataVencimento);
 
       const processedRow = {
         AUTORIZADOR: autorizacao.toString().trim(),
-        VENDA: vendaNormalizada,
+        VENDA: entradaNormalizada || vendaNormalizada, // Prioriza ENTRADA, fallback para DATA DA VENDA
         VENCIMENTO: vencimentoNormalizado,
         TIPO: tipo.toUpperCase().trim(),
         PARC: parcelaNumber,
         QTDADE: 1,
         BANDEIRA: bandeira.toUpperCase().trim(),
         BRUTO: this.parseMonetaryValue(valorVenda),
-        LIQUIDO: this.parseMonetaryValue(valorLiquidoParcela),
+        LÍQUIDO: this.parseMonetaryValue(valorLiquidoParcela), // Nome correto com acento
         DESCONTO: this.parseMonetaryValue(descontos)
       };
 
@@ -280,11 +284,11 @@ export class ExcelProcessor {
       });
 
       if (bankMatch) {
-        // Campos coincidentes - atualiza VENCIMENTO, LIQUIDO e DESCONTO
+        // Campos coincidentes - atualiza VENCIMENTO, LÍQUIDO e DESCONTO
         const updatedRow = {
           ...processedRow,
           VENCIMENTO: bankMatch.VENCIMENTO,
-          LIQUIDO: bankMatch.LIQUIDO,
+          LÍQUIDO: bankMatch.LÍQUIDO,
           DESCONTO: bankMatch.DESCONTO
         };
         matched.push(updatedRow);
@@ -293,7 +297,7 @@ export class ExcelProcessor {
           console.log(`Match encontrado para linha ${index + 1}:`, {
             autorizador: processedRow.AUTORIZADOR,
             vencimento: bankMatch.VENCIMENTO,
-            liquido: bankMatch.LIQUIDO,
+            liquido: bankMatch.LÍQUIDO,
             desconto: bankMatch.DESCONTO
           });
         }
@@ -532,43 +536,19 @@ export class ExcelProcessor {
       // Cria worksheet com os dados
       const ws = XLSX.utils.json_to_sheet(data);
       
-      // Se há discrepâncias, destaque em vermelho
+      // Cria diferentes planilhas para dados processados e discrepâncias
       if (highlightDiscrepancies && highlightDiscrepancies.length > 0) {
-        console.log(`Destacando ${highlightDiscrepancies.length} linhas com discrepâncias`);
+        console.log(`Separando ${data.length - highlightDiscrepancies.length} dados processados e ${highlightDiscrepancies.length} discrepâncias`);
         
-        highlightDiscrepancies.forEach((discrepancy) => {
-          const rowIndex = data.findIndex(row => 
-            row.AUTORIZADOR === discrepancy.row.AUTORIZADOR &&
-            row.VENCIMENTO === discrepancy.row.VENCIMENTO &&
-            row.BRUTO === discrepancy.row.BRUTO
-          );
-          
-          if (rowIndex >= 0) {
-            // +2 porque: +1 para cabeçalho + 1 para índice baseado em 1
-            const excelRowIndex = rowIndex + 2;
-            
-            // Adiciona estilo vermelho para as principais colunas
-            const cellAddresses = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-            cellAddresses.forEach(col => {
-              const cellAddress = `${col}${excelRowIndex}`;
-              if (!ws[cellAddress]) {
-                ws[cellAddress] = { v: '', t: 's' };
-              }
-              if (!ws[cellAddress].s) {
-                ws[cellAddress].s = {};
-              }
-              ws[cellAddress].s.fill = {
-                patternType: 'solid',
-                fgColor: { rgb: 'FFCCCCCC' },
-                bgColor: { rgb: 'FFFF0000' }
-              };
-            });
-          }
-        });
-      }
-
-      // Cria uma segunda planilha com as discrepâncias detalhadas
-      if (highlightDiscrepancies && highlightDiscrepancies.length > 0) {
+        // Filtra apenas os dados que não têm discrepâncias (100% preenchidos)
+        const discrepancyRowIds = new Set(highlightDiscrepancies.map(d => 
+          `${d.row.AUTORIZADOR}-${d.row.VENDA}-${d.row.BRUTO}`
+        ));
+        
+        const matchedData = data.filter(row => 
+          !discrepancyRowIds.has(`${row.AUTORIZADOR}-${row.VENDA}-${row.BRUTO}`)
+        );
+        
         const discrepancyData = highlightDiscrepancies.map(d => ({
           AUTORIZADOR: d.row.AUTORIZADOR,
           VENDA: d.row.VENDA,
@@ -580,10 +560,12 @@ export class ExcelProcessor {
           PROBLEMAS: d.issues.join('; ')
         }));
         
+        // Cria planilha apenas com dados 100% corretos
+        const matchedWs = XLSX.utils.json_to_sheet(matchedData);
         const discrepancyWs = XLSX.utils.json_to_sheet(discrepancyData);
         
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Dados Processados');
+        XLSX.utils.book_append_sheet(wb, matchedWs, 'Dados Processados');
         XLSX.utils.book_append_sheet(wb, discrepancyWs, 'Discrepâncias');
         
         XLSX.writeFile(wb, filename);

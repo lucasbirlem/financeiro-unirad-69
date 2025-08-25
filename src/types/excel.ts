@@ -20,7 +20,7 @@ export interface TesteRow {
   QTDADE?: number;
   BANDEIRA?: string;
   BRUTO?: number;
-  LIQUIDO?: number;
+  LÍQUIDO?: number;
   DESCONTO?: number;
 }
 
