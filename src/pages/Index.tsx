@@ -20,8 +20,6 @@ const Index = () => {
   const [testeFile, setTesteFile] = useState<File>();
   const [vendaStartDate, setVendaStartDate] = useState<Date>();
   const [vendaEndDate, setVendaEndDate] = useState<Date>();
-  const [vencimentoStartDate, setVencimentoStartDate] = useState<Date>();
-  const [vencimentoEndDate, setVencimentoEndDate] = useState<Date>();
   const [processedData, setProcessedData] = useState<TesteRow[]>();
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -78,18 +76,6 @@ const Index = () => {
           'venda'
         );
         console.log(`Filtro venda aplicado: ${beforeFilter} → ${convertedData.length} registros`);
-      }
-      
-      // Filtro por data de vencimento (aplicado sobre o resultado anterior)
-      if (vencimentoStartDate && vencimentoEndDate) {
-        const beforeVencimentoFilter = convertedData.length;
-        convertedData = ExcelProcessor.filterByDateRange(
-          convertedData,
-          vencimentoStartDate.toISOString().split('T')[0],
-          vencimentoEndDate.toISOString().split('T')[0],
-          'vencimento'
-        );
-        console.log(`Filtro vencimento aplicado: ${beforeVencimentoFilter} → ${convertedData.length} registros`);
       }
 
       setProcessedData(convertedData);
@@ -174,8 +160,6 @@ const Index = () => {
     setRelCartoesFile(undefined);
     setVendaStartDate(undefined);
     setVendaEndDate(undefined);
-    setVencimentoStartDate(undefined);
-    setVencimentoEndDate(undefined);
     setProcessedData(undefined);
   };
 
@@ -251,12 +235,8 @@ const Index = () => {
                     <DateRangeSelector
                       vendaStartDate={vendaStartDate}
                       vendaEndDate={vendaEndDate}
-                      vencimentoStartDate={vencimentoStartDate}
-                      vencimentoEndDate={vencimentoEndDate}
                       onVendaStartDateChange={setVendaStartDate}
                       onVendaEndDateChange={setVendaEndDate}
-                      onVencimentoStartDateChange={setVencimentoStartDate}
-                      onVencimentoEndDateChange={setVencimentoEndDate}
                     />
                   </div>
 
