@@ -186,7 +186,7 @@ export class ExcelProcessor {
       const bandeiraModalidade = row['BANDEIRA / MODALIDADE'] || '';
       const parcelas = row['PARCELAS'] || '';
       const valorVenda = row['VALOR DA VENDA'] || 0;
-      const valorParcela = row['VALOR DA PARCELA'] || 0;
+      const valorLiquidoParcela = row['VALOR LIQUIDO DA PARCELA'] || 0;
       const descontos = row['DESCONTOS'] || 0;
 
       // TRATAR PARCELAS "1 de 1" → pegar apenas o primeiro número
@@ -219,7 +219,7 @@ export class ExcelProcessor {
         QTDADE: 1,
         BANDEIRA: bandeira.toUpperCase().trim(),
         BRUTO: this.parseMonetaryValue(valorVenda),
-        LIQUIDO: this.parseMonetaryValue(valorParcela),
+        LIQUIDO: this.parseMonetaryValue(valorLiquidoParcela),
         DESCONTO: this.parseMonetaryValue(descontos)
       };
 
