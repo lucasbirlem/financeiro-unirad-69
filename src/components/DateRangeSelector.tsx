@@ -12,25 +12,30 @@ interface DateRangeSelectorProps {
   vendaEndDate?: Date;
   onVendaStartDateChange: (date: Date | undefined) => void;
   onVendaEndDateChange: (date: Date | undefined) => void;
+  title?: string;
+  startLabel?: string;
+  endLabel?: string;
 }
 
 export const DateRangeSelector = ({
   vendaStartDate,
   vendaEndDate,
   onVendaStartDateChange,
-  onVendaEndDateChange
+  onVendaEndDateChange,
+  title = "Filtro por Data de Entrada/Venda",
+  startLabel = "Data Inicial",
+  endLabel = "Data Final"
 }: DateRangeSelectorProps) => {
   const [vendaStartOpen, setVendaStartOpen] = useState(false);
   const [vendaEndOpen, setVendaEndOpen] = useState(false);
 
   return (
     <div className="space-y-4">
-      {/* Filtro por Data de Entrada/Venda */}
       <div className="space-y-4">
-        <h4 className="text-sm font-medium text-foreground">Filtro por Data de Entrada/Venda</h4>
+        <h4 className="text-sm font-medium text-foreground">{title}</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Data Inicial (Venda)</label>
+            <label className="text-sm font-medium">{startLabel}</label>
             <Popover open={vendaStartOpen} onOpenChange={setVendaStartOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -66,7 +71,7 @@ export const DateRangeSelector = ({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Data Final (Venda)</label>
+            <label className="text-sm font-medium">{endLabel}</label>
             <Popover open={vendaEndOpen} onOpenChange={setVendaEndOpen}>
               <PopoverTrigger asChild>
                 <Button

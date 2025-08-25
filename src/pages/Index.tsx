@@ -15,6 +15,9 @@ const Index = () => {
   const { toast } = useToast();
   const { referenceData, saveReferenceData } = useReferenceData();
   
+  // Estado para controlar a aba ativa
+  const [activeTab, setActiveTab] = useState("model1");
+  
   // Modelo 1 - Conversão Otimus para Referência
   const [relCartoesFile, setRelCartoesFile] = useState<File>();
   const [testeFile, setTesteFile] = useState<File>();
@@ -172,6 +175,17 @@ const Index = () => {
     setComparisonResults(undefined);
   };
 
+  // Função para navegar para o modelo 2 com dados processados
+  const handleGoToComparison = (data: TesteRow[]) => {
+    // Criar um arquivo virtual com os dados processados
+    const jsonString = JSON.stringify(data);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const file = new File([blob], 'modelo1_processado.json', { type: 'application/json' });
+    
+    setProcessedFile(file);
+    setActiveTab("model2");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <div className="container mx-auto px-4 py-8">
@@ -192,7 +206,7 @@ const Index = () => {
           </div>
 
           {/* Main Content */}
-          <Tabs defaultValue="model1" className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-2 bg-card shadow-elegant">
               <TabsTrigger value="model1" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
@@ -240,6 +254,7 @@ const Index = () => {
                       vendaEndDate={vendaEndDate}
                       onVendaStartDateChange={setVendaStartDate}
                       onVendaEndDateChange={setVendaEndDate}
+                      title="Filtro por Data de Entrada"
                     />
                   </div>
 
@@ -259,6 +274,7 @@ const Index = () => {
                   processedData={processedData}
                   mode="model1"
                   onReset={handleResetModel1}
+                  onGoToComparison={handleGoToComparison}
                 />
               )}
             </TabsContent>
@@ -299,6 +315,7 @@ const Index = () => {
                       vendaEndDate={vencimentoEndDate}
                       onVendaStartDateChange={setVencimentoStartDate}
                       onVendaEndDateChange={setVencimentoEndDate}
+                      title="Filtro por Data de Vencimento"
                     />
                   </div>
 

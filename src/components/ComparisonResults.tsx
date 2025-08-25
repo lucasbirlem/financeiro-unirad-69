@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, CheckCircle, AlertCircle } from 'lucide-react';
+import { Download, CheckCircle, AlertCircle, GitCompare, RotateCcw } from 'lucide-react';
 import { TesteRow } from '@/types/excel';
 import { ExcelProcessor } from '@/utils/excelProcessor';
 
@@ -15,9 +15,10 @@ interface ComparisonResultsProps {
   vencimentoStartDate?: Date;
   vencimentoEndDate?: Date;
   onReset?: () => void;
+  onGoToComparison?: (data: TesteRow[]) => void;
 }
 
-export const ComparisonResults = ({ results, processedData, mode, vencimentoStartDate, vencimentoEndDate, onReset }: ComparisonResultsProps) => {
+export const ComparisonResults = ({ results, processedData, mode, vencimentoStartDate, vencimentoEndDate, onReset, onGoToComparison }: ComparisonResultsProps) => {
   const handleDownload = () => {
     if (mode === 'model1' && processedData) {
       ExcelProcessor.exportToExcel(processedData, 'modelo1_processado.xlsx');
@@ -63,11 +64,23 @@ export const ComparisonResults = ({ results, processedData, mode, vencimentoStar
             Líquido e Desconto foram zerados conforme solicitado.
           </p>
 
-          <div className="pt-4">
-            <Button onClick={handleDownload} className="w-full">
+          <div className="pt-4 space-y-3">
+            {onGoToComparison && (
+              <Button onClick={() => onGoToComparison(processedData)} className="w-full">
+                <GitCompare className="mr-2 h-4 w-4" />
+                Ir para a Comparação
+              </Button>
+            )}
+            <Button onClick={handleDownload} variant="outline" className="w-full">
               <Download className="mr-2 h-4 w-4" />
               Baixar Arquivo Processado
             </Button>
+            {onReset && (
+              <Button onClick={onReset} variant="destructive" className="w-full">
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Resetar
+              </Button>
+            )}
           </div>
         </div>
       </Card>
@@ -114,11 +127,17 @@ export const ComparisonResults = ({ results, processedData, mode, vencimentoStar
             </div>
           )}
 
-          <div className="pt-4">
+          <div className="pt-4 space-y-3">
             <Button onClick={handleDownload} className="w-full">
               <Download className="mr-2 h-4 w-4" />
               Baixar Relatório com Divergências Destacadas
             </Button>
+            {onReset && (
+              <Button onClick={onReset} variant="destructive" className="w-full">
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Resetar
+              </Button>
+            )}
           </div>
         </div>
       </Card>
