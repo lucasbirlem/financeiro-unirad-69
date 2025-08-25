@@ -26,6 +26,8 @@ const Index = () => {
   // Modelo 2 - Comparação com banco
   const [processedFile, setProcessedFile] = useState<File>();
   const [bankFile, setBankFile] = useState<File>();
+  const [vencimentoStartDate, setVencimentoStartDate] = useState<Date>();
+  const [vencimentoEndDate, setVencimentoEndDate] = useState<Date>();
   const [comparisonResults, setComparisonResults] = useState<{
     matched: TesteRow[];
     discrepancies: Array<{ row: TesteRow; issues: string[] }>;
@@ -272,7 +274,7 @@ const Index = () => {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <FileUpload
                       label="Arquivo Processado"
                       description="Resultado do Modelo 1 ou arquivo no formato TESTE"
@@ -287,6 +289,16 @@ const Index = () => {
                       onFileSelect={setBankFile}
                       selectedFile={bankFile}
                       onRemoveFile={() => setBankFile(undefined)}
+                    />
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">Filtro por Vencimento (Opcional)</h3>
+                    <DateRangeSelector
+                      vendaStartDate={vencimentoStartDate}
+                      vendaEndDate={vencimentoEndDate}
+                      onVendaStartDateChange={setVencimentoStartDate}
+                      onVendaEndDateChange={setVencimentoEndDate}
                     />
                   </div>
 
@@ -305,6 +317,8 @@ const Index = () => {
                 <ComparisonResults 
                   results={comparisonResults}
                   mode="model2"
+                  vencimentoStartDate={vencimentoStartDate}
+                  vencimentoEndDate={vencimentoEndDate}
                   onReset={handleResetModel2}
                 />
               )}

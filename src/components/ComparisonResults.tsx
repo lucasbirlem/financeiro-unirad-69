@@ -12,15 +12,28 @@ interface ComparisonResultsProps {
   };
   processedData?: TesteRow[];
   mode: 'model1' | 'model2';
+  vencimentoStartDate?: Date;
+  vencimentoEndDate?: Date;
   onReset?: () => void;
 }
 
-export const ComparisonResults = ({ results, processedData, mode, onReset }: ComparisonResultsProps) => {
+export const ComparisonResults = ({ results, processedData, mode, vencimentoStartDate, vencimentoEndDate, onReset }: ComparisonResultsProps) => {
   const handleDownload = () => {
     if (mode === 'model1' && processedData) {
       ExcelProcessor.exportToExcel(processedData, 'modelo1_processado.xlsx');
     } else if (mode === 'model2' && results) {
-      const allData = [...results.matched, ...results.discrepancies.map(d => d.row)];
+      let allData = [...results.matched, ...results.discrepancies.map(d => d.row)];
+      
+      // Aplicar filtro por vencimento se as datas foram selecionadas
+      if (vencimentoStartDate && vencimentoEndDate) {
+        allData = ExcelProcessor.filterByDateRange(
+          allData,
+          vencimentoStartDate.toISOString().split('T')[0],
+          vencimentoEndDate.toISOString().split('T')[0],
+          'vencimento'
+        );
+      }
+      
       ExcelProcessor.exportToExcel(
         allData, 
         'modelo2_comparacao_banco.xlsx',
