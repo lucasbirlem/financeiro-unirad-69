@@ -105,7 +105,7 @@ export class ExcelProcessor {
       return {
         AUTORIZADOR: autorizador,
         VENDA: entrada, // VENDA vem da coluna Entrada
-        VENCIMENTO: vencimento,
+        VENCIMENTO: '', // Mantém a coluna mas sempre vazia conforme solicitado
         TIPO: tipo.includes('DÉBITO') || tipo.includes('CRÉDITO') ? 
               (tipo.includes('DÉBITO') ? 'DÉBITO' : 'CRÉDITO') : 
               (tipo.includes('Cartão de Crédito') ? 'CRÉDITO' : 
