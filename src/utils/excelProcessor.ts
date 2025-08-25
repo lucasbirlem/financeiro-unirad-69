@@ -216,6 +216,10 @@ export class ExcelProcessor {
         
         const vencimentoFormatted = vencimento.toLocaleDateString('pt-BR');
 
+        const brutoValue = this.parseMonetaryValue(row['Valor Transacao']);
+        
+        console.log(`Vero - Valor Transacao original: "${row['Valor Transacao']}", parseado: ${brutoValue}`);
+        
         return {
           AUTORIZADOR: String(row['NSU'] || ''),
           VENDA: this.normalizeDate(row['Data Movimento']),
@@ -224,7 +228,7 @@ export class ExcelProcessor {
           PARC: this.parseNumber(row['Parcela']),
           QTDADE: 1, // Padrão
           BANDEIRA: '', // Vero não tem bandeira específica
-          BRUTO: this.parseMonetaryValue(row['Valor Transacao']),
+          BRUTO: brutoValue,
           LÍQUIDO: this.parseMonetaryValue(row['Valor Liquido']),
           DESCONTO: this.parseMonetaryValue(row['Vl Tx Adm (MDR)'])
         };
@@ -289,6 +293,10 @@ export class ExcelProcessor {
       const vendaNormalizada = this.convertExcelDate(dataVenda);
       const vencimentoNormalizado = this.convertExcelDate(dataVencimento);
 
+      const brutoValue = this.parseMonetaryValue(valorVenda);
+      
+      console.log(`Banco - Valor da Venda original: "${valorVenda}", parseado: ${brutoValue}`);
+      
       const processedRow = {
         AUTORIZADOR: autorizacao.toString().trim(),
         VENDA: entradaNormalizada || vendaNormalizada, // Prioriza ENTRADA, fallback para DATA DA VENDA
@@ -297,7 +305,7 @@ export class ExcelProcessor {
         PARC: parcelaNumber,
         QTDADE: 1,
         BANDEIRA: bandeira.toUpperCase().trim(),
-        BRUTO: this.parseMonetaryValue(valorVenda),
+        BRUTO: brutoValue,
         LÍQUIDO: this.parseMonetaryValue(valorLiquidoParcela), // Nome correto com acento
         DESCONTO: this.parseMonetaryValue(descontos)
       };
