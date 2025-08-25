@@ -190,6 +190,47 @@ export class ExcelProcessor {
     return filteredData;
   }
 
+  static processVeroReport(veroData: any[]): TesteRow[] {
+    console.log(`Processando ${veroData.length} registros do relatório Vero`);
+    
+    return veroData
+      .filter(row => {
+        // Filtra registros válidos - deve ter pelo menos Data Movimento, NSU, Parcela e Valor Transacao
+        return row['Data Movimento'] && 
+               row['NSU'] && 
+               row['Parcela'] !== undefined && 
+               row['Valor Transacao'] !== undefined;
+      })
+      .map(row => {
+        // Calcula a data de vencimento (1 dia após Data Movimento, ajustando para segunda-feira se cair em fim de semana)
+        const dataMovimento = new Date(row['Data Movimento']);
+        const vencimento = new Date(dataMovimento);
+        vencimento.setDate(vencimento.getDate() + 1);
+        
+        // Se cair em sábado (6) ou domingo (0), mover para segunda-feira
+        if (vencimento.getDay() === 0) { // Domingo
+          vencimento.setDate(vencimento.getDate() + 1);
+        } else if (vencimento.getDay() === 6) { // Sábado
+          vencimento.setDate(vencimento.getDate() + 2);
+        }
+        
+        const vencimentoFormatted = vencimento.toLocaleDateString('pt-BR');
+
+        return {
+          AUTORIZADOR: String(row['NSU'] || ''),
+          VENDA: this.normalizeDate(row['Data Movimento']),
+          VENCIMENTO: vencimentoFormatted,
+          TIPO: '', // Vero não tem tipo específico
+          PARC: this.parseNumber(row['Parcela']),
+          QTDADE: 1, // Padrão
+          BANDEIRA: '', // Vero não tem bandeira específica
+          BRUTO: this.parseMonetaryValue(row['Valor Transacao']),
+          LÍQUIDO: this.parseMonetaryValue(row['Valor Liquido']),
+          DESCONTO: this.parseMonetaryValue(row['Vl Tx Adm (MDR)'])
+        };
+      });
+  }
+
   static processBankReport(bankData: any[]): TesteRow[] {
     console.log('Processando relatório do banco com', bankData.length, 'registros');
     
@@ -269,17 +310,19 @@ export class ExcelProcessor {
     })
   }
 
-  static compareWithBankReport(processedData: TesteRow[], bankData: any[]): {
+  static compareWithBankReport(processedData: TesteRow[], bankData: any[], bankType: 'getnet' | 'vero' = 'getnet'): {
     matched: TesteRow[];
     discrepancies: Array<{ row: TesteRow; issues: string[] }>;
   } {
     const matched: TesteRow[] = [];
     const discrepancies: Array<{ row: TesteRow; issues: string[] }> = [];
 
-    // Processa os dados do banco
-    const processedBankData = this.processBankReport(bankData);
+    // Processa os dados do banco baseado no tipo
+    const processedBankData = bankType === 'vero' 
+      ? this.processVeroReport(bankData) 
+      : this.processBankReport(bankData);
     
-    console.log(`Comparando ${processedData.length} registros processados com ${processedBankData.length} registros do banco`);
+    console.log(`Comparando ${processedData.length} registros processados com ${processedBankData.length} registros do banco (${bankType})`);
 
     processedData.forEach((processedRow, index) => {
       const issues: string[] = [];

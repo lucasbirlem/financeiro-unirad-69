@@ -141,7 +141,7 @@ const Index = () => {
       //   return;
       // }
       
-      const results = ExcelProcessor.compareWithBankReport(processedData, bankData);
+      const results = ExcelProcessor.compareWithBankReport(processedData, bankData, bankType);
       setComparisonResults(results);
       
       toast({
