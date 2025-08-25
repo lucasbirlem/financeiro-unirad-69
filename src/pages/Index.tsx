@@ -116,9 +116,11 @@ const Index = () => {
       const processedData = await ExcelProcessor.readExcelFile(processedFile) as TesteRow[];
       console.log('Arquivo processado lido:', processedData.length, 'registros');
       
-      // Lê especificamente a aba "DETALHADO" do relatório do banco
-      console.log('2. Lendo aba DETALHADO do relatório do banco...');
-      const bankData = await ExcelProcessor.readExcelFile(bankFile, "DETALHADO");
+      // Lê o relatório do banco baseado no tipo
+      console.log(`2. Lendo relatório do banco (${bankType})...`);
+      const bankData = bankType === 'vero' 
+        ? await ExcelProcessor.readExcelFile(bankFile) // Vero: primeira aba padrão
+        : await ExcelProcessor.readExcelFile(bankFile, "DETALHADO"); // Getnet: aba DETALHADO
       console.log('Dados do banco lidos:', bankData.length, 'registros');
       console.log('Primeiro registro do banco:', bankData[0]);
       console.log('Colunas detectadas no banco:', Object.keys(bankData[0] || {}));
