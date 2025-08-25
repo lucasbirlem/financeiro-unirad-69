@@ -123,6 +123,10 @@ export class ExcelProcessor {
   static filterByDateRange(data: TesteRow[], startDate: string, endDate: string, filterType: 'venda' | 'vencimento' = 'venda'): TesteRow[] {
     if (!startDate || !endDate) return data;
     
+    console.log('=== DEBUG FILTRO DE DATAS ===');
+    console.log('Data inicial recebida:', startDate);
+    console.log('Data final recebida:', endDate);
+    
     // Configurar corretamente o início e fim do período
     const start = new Date(startDate);
     start.setHours(0, 0, 0, 0); // Início do dia da data inicial
@@ -130,7 +134,10 @@ export class ExcelProcessor {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999); // Final do dia da data final
     
-    return data.filter(row => {
+    console.log('Data inicial processada:', start.toISOString());
+    console.log('Data final processada:', end.toISOString());
+    
+    const filteredData = data.filter((row, index) => {
       const dateField = filterType === 'venda' ? row.VENDA : row.VENCIMENTO;
       if (!dateField) return false;
       
@@ -140,6 +147,7 @@ export class ExcelProcessor {
         if (dateField.includes('/')) {
           const [day, month, year] = dateField.split('/');
           rowDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          rowDate.setHours(12, 0, 0, 0); // Meio-dia para evitar problemas de timezone
         } else if (dateField.includes('-')) {
           rowDate = new Date(dateField);
         } else {
@@ -147,13 +155,24 @@ export class ExcelProcessor {
           rowDate = new Date(dateField);
         }
         
-        // Agora inclui corretamente desde o início da data inicial até o final da data final
-        return rowDate >= start && rowDate <= end;
+        const isInRange = rowDate >= start && rowDate <= end;
+        
+        // Debug apenas para os primeiros registros e os que passam no filtro
+        if (index < 5 || isInRange) {
+          console.log(`Registro ${index}: Data original="${dateField}", Data parseada="${rowDate.toISOString()}", Incluído=${isInRange}`);
+        }
+        
+        return isInRange;
       } catch (error) {
         console.warn('Erro ao parsear data:', dateField);
         return false;
       }
     });
+    
+    console.log(`=== RESULTADO FILTRO ===`);
+    console.log(`Dados originais: ${data.length}, Dados filtrados: ${filteredData.length}`);
+    
+    return filteredData;
   }
 
   static processBankReport(bankData: any[]): TesteRow[] {
