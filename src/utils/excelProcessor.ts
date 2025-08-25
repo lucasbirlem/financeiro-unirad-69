@@ -246,23 +246,23 @@ export class ExcelProcessor {
     processedData.forEach((processedRow, index) => {
       const issues: string[] = [];
       
-      // Busca correspondência pelos 7 campos obrigatórios
+      // Busca correspondência pelos 6 campos obrigatórios (excluindo VENCIMENTO)
       const bankMatch = processedBankData.find(bankRow => {
         const autorizadorMatch = this.normalizeString(bankRow.AUTORIZADOR) === this.normalizeString(processedRow.AUTORIZADOR);
         const vendaMatch = this.normalizeDate(bankRow.VENDA) === this.normalizeDate(processedRow.VENDA);
-        const vencimentoMatch = this.normalizeDate(bankRow.VENCIMENTO) === this.normalizeDate(processedRow.VENCIMENTO);
         const bandeiraMatch = this.normalizeString(bankRow.BANDEIRA) === this.normalizeString(processedRow.BANDEIRA);
         const tipoMatch = this.normalizeString(bankRow.TIPO) === this.normalizeString(processedRow.TIPO);
         const parcMatch = bankRow.PARC === processedRow.PARC;
         const brutoMatch = Math.abs((bankRow.BRUTO || 0) - (processedRow.BRUTO || 0)) < 0.01; // Tolerância para valores monetários
         
-        return autorizadorMatch && vendaMatch && vencimentoMatch && bandeiraMatch && tipoMatch && parcMatch && brutoMatch;
+        return autorizadorMatch && vendaMatch && bandeiraMatch && tipoMatch && parcMatch && brutoMatch;
       });
 
       if (bankMatch) {
-        // Todos os 7 campos coincidem - atualiza LIQUIDO e DESCONTO
+        // Campos coincidentes - atualiza VENCIMENTO, LIQUIDO e DESCONTO
         const updatedRow = {
           ...processedRow,
+          VENCIMENTO: bankMatch.VENCIMENTO,
           LIQUIDO: bankMatch.LIQUIDO,
           DESCONTO: bankMatch.DESCONTO
         };
@@ -271,6 +271,7 @@ export class ExcelProcessor {
         if (index < 3) {
           console.log(`Match encontrado para linha ${index + 1}:`, {
             autorizador: processedRow.AUTORIZADOR,
+            vencimento: bankMatch.VENCIMENTO,
             liquido: bankMatch.LIQUIDO,
             desconto: bankMatch.DESCONTO
           });
@@ -287,9 +288,6 @@ export class ExcelProcessor {
           potentialMatches.forEach(bankRow => {
             if (this.normalizeDate(bankRow.VENDA) !== this.normalizeDate(processedRow.VENDA)) {
               issues.push(`DATA DA VENDA divergente: ${processedRow.VENDA} vs ${bankRow.VENDA}`);
-            }
-            if (this.normalizeDate(bankRow.VENCIMENTO) !== this.normalizeDate(processedRow.VENCIMENTO)) {
-              issues.push(`DATA DE VENCIMENTO divergente: ${processedRow.VENCIMENTO} vs ${bankRow.VENCIMENTO}`);
             }
             if (this.normalizeString(bankRow.BANDEIRA) !== this.normalizeString(processedRow.BANDEIRA)) {
               issues.push(`BANDEIRA divergente: ${processedRow.BANDEIRA} vs ${bankRow.BANDEIRA}`);
