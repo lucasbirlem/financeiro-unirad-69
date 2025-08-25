@@ -176,14 +176,33 @@ const Index = () => {
   };
 
   // Função para navegar para o modelo 2 com dados processados
-  const handleGoToComparison = (data: TesteRow[]) => {
-    // Criar um arquivo virtual com os dados processados
-    const jsonString = JSON.stringify(data);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const file = new File([blob], 'modelo1_processado.json', { type: 'application/json' });
-    
-    setProcessedFile(file);
-    setActiveTab("model2");
+  const handleGoToComparison = async (data: TesteRow[]) => {
+    try {
+      // Gerar arquivo XLSX usando o mesmo processo do download
+      const buffer = ExcelProcessor.createExcelBuffer(data);
+      
+      // Criar um arquivo XLSX a partir do buffer
+      const blob = new Blob([buffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      const file = new File([blob], 'modelo1_processado.xlsx', { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      
+      setProcessedFile(file);
+      setActiveTab("model2");
+      
+      toast({
+        title: "Sucesso",
+        description: "Dados transferidos para a comparação",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao preparar dados para comparação",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

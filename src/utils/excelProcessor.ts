@@ -594,4 +594,18 @@ export class ExcelProcessor {
       throw new Error('Erro ao exportar arquivo Excel');
     }
   }
+
+  static createExcelBuffer(data: TesteRow[]): ArrayBuffer {
+    try {
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Dados Processados');
+      
+      // Retorna o buffer ao invés de baixar o arquivo
+      return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    } catch (error) {
+      console.error('Erro ao criar buffer Excel:', error);
+      throw new Error('Erro ao criar arquivo Excel');
+    }
+  }
 }
