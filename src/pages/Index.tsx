@@ -21,7 +21,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("model1");
   
   // Modelo 1 - Conversão Otimus para Referência
-  const [relCartoesFile, setRelCartoesFile] = useState<File>();
+  const [relCartoesFile, setRelCartoesFile] = useState<File[]>();
   const [vendaStartDate, setVendaStartDate] = useState<Date>();
   const [vendaEndDate, setVendaEndDate] = useState<Date>();
   const [processedData, setProcessedData] = useState<TesteRow[]>();
@@ -40,10 +40,10 @@ const Index = () => {
   const [isComparing, setIsComparing] = useState(false);
 
   const handleModel1Process = async () => {
-    if (!relCartoesFile) {
+    if (!relCartoesFile || relCartoesFile.length === 0) {
       toast({
         title: "Erro",
-        description: "Selecione o arquivo gerado do Otimus",
+        description: "Selecione pelo menos um arquivo gerado do Otimus",
         variant: "destructive",
       });
       return;
@@ -51,10 +51,15 @@ const Index = () => {
 
     setIsProcessing(true);
     try {
-      const relCartoesData = await ExcelProcessor.readExcelFile(relCartoesFile) as RelCartoesRow[];
-      console.log('Dados originais:', relCartoesData.slice(0, 3)); // Debug
+      // Processa múltiplos arquivos se fornecidos
+      let allRelCartoesData: RelCartoesRow[] = [];
+      for (const file of relCartoesFile) {
+        const fileData = await ExcelProcessor.readExcelFile(file) as RelCartoesRow[];
+        allRelCartoesData = allRelCartoesData.concat(fileData);
+      }
+      console.log('Dados originais mesclados:', allRelCartoesData.slice(0, 3), `Total: ${allRelCartoesData.length} registros`);
       
-      let convertedData = ExcelProcessor.convertRelCartoesToTeste(relCartoesData);
+      let convertedData = ExcelProcessor.convertRelCartoesToTeste(allRelCartoesData);
       console.log('Dados convertidos:', convertedData.slice(0, 3)); // Debug
       
       
@@ -249,11 +254,12 @@ const Index = () => {
                   </div>
 
                   <FileUpload
-                    label="Arquivo do Otimus"
-                    description="Arquivo Excel gerado pelo sistema Otimus"
-                    onFileSelect={setRelCartoesFile}
+                    label="Arquivo(s) do Otimus"
+                    description="Arquivo(s) Excel gerado(s) pelo sistema Otimus (podem ser múltiplos de caixas diferentes)"
+                    onFileSelect={(files) => setRelCartoesFile(Array.isArray(files) ? files : [files])}
                     selectedFile={relCartoesFile}
                     onRemoveFile={() => setRelCartoesFile(undefined)}
+                    multiple={true}
                   />
 
                   <div>
@@ -267,12 +273,12 @@ const Index = () => {
                     />
                   </div>
 
-                  <Button 
-                    onClick={handleModel1Process}
-                    disabled={!relCartoesFile || isProcessing}
-                    className="w-full"
-                    size="lg"
-                  >
+                   <Button 
+                     onClick={handleModel1Process}
+                     disabled={!relCartoesFile || relCartoesFile.length === 0 || isProcessing}
+                     className="w-full"
+                     size="lg"
+                   >
                     {isProcessing ? "Processando..." : "Processar Conversão"}
                   </Button>
                 </div>
@@ -318,21 +324,21 @@ const Index = () => {
                    </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <FileUpload
-                      label="Arquivo Processado"
-                      description="Resultado do Modelo 1 ou arquivo no formato TESTE"
-                      onFileSelect={setProcessedFile}
-                      selectedFile={processedFile}
-                      onRemoveFile={() => setProcessedFile(undefined)}
-                    />
-                    
-                    <FileUpload
-                      label="Relatório do Banco"
-                      description="Arquivo Excel com dados do banco para comparação"
-                      onFileSelect={setBankFile}
-                      selectedFile={bankFile}
-                      onRemoveFile={() => setBankFile(undefined)}
-                    />
+                     <FileUpload
+                       label="Arquivo Processado"
+                       description="Resultado do Modelo 1 ou arquivo no formato TESTE"
+                       onFileSelect={(file) => setProcessedFile(Array.isArray(file) ? file[0] : file)}
+                       selectedFile={processedFile}
+                       onRemoveFile={() => setProcessedFile(undefined)}
+                     />
+                     
+                     <FileUpload
+                       label="Relatório do Banco"
+                       description="Arquivo Excel com dados do banco para comparação"
+                       onFileSelect={(file) => setBankFile(Array.isArray(file) ? file[0] : file)}
+                       selectedFile={bankFile}
+                       onRemoveFile={() => setBankFile(undefined)}
+                     />
                   </div>
 
                   <div>

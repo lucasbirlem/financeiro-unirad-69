@@ -5,12 +5,13 @@ import { Upload, FileSpreadsheet, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FileUploadProps {
-  onFileSelect: (file: File) => void;
+  onFileSelect: (file: File | File[]) => void;
   label: string;
   description: string;
-  selectedFile?: File;
+  selectedFile?: File | File[];
   onRemoveFile?: () => void;
   accept?: string;
+  multiple?: boolean;
 }
 
 export const FileUpload = ({ 
@@ -19,7 +20,8 @@ export const FileUpload = ({
   description, 
   selectedFile, 
   onRemoveFile,
-  accept = ".xlsx,.xls"
+  accept = ".xlsx,.xls",
+  multiple = false
 }: FileUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,19 +40,27 @@ export const FileUpload = ({
     setIsDragging(false);
     
     const files = Array.from(e.dataTransfer.files);
-    const excelFile = files.find(file => 
+    const excelFiles = files.filter(file => 
       file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
     );
     
-    if (excelFile) {
-      onFileSelect(excelFile);
+    if (excelFiles.length > 0) {
+      if (multiple) {
+        onFileSelect(excelFiles);
+      } else {
+        onFileSelect(excelFiles[0]);
+      }
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onFileSelect(file);
+    const files = e.target.files;
+    if (files) {
+      if (multiple) {
+        onFileSelect(Array.from(files));
+      } else {
+        onFileSelect(files[0]);
+      }
     }
   };
 
@@ -59,30 +69,41 @@ export const FileUpload = ({
   };
 
   if (selectedFile) {
+    const files = Array.isArray(selectedFile) ? selectedFile : [selectedFile];
+    
     return (
-      <Card className="p-4 border border-success/20 bg-success-light">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <FileSpreadsheet className="h-8 w-8 text-success" />
-            <div>
-              <p className="font-medium text-success">{selectedFile.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-              </p>
+      <div className="space-y-2">
+        {files.map((file, index) => (
+          <Card key={index} className="p-4 border border-success/20 bg-success-light">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FileSpreadsheet className="h-8 w-8 text-success" />
+                <div>
+                  <p className="font-medium text-success">{file.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              </div>
+              {onRemoveFile && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onRemoveFile}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-          </div>
-          {onRemoveFile && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onRemoveFile}
-              className="text-muted-foreground hover:text-destructive"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </Card>
+          </Card>
+        ))}
+        {multiple && files.length > 1 && (
+          <p className="text-sm text-muted-foreground text-center">
+            {files.length} arquivo(s) selecionado(s)
+          </p>
+        )}
+      </div>
     );
   }
 
@@ -108,13 +129,14 @@ export const FileUpload = ({
           Selecionar Arquivo
         </Button>
         <p className="text-xs text-muted-foreground mt-2">
-          Ou arraste e solte um arquivo Excel aqui
+          Ou arraste e solte {multiple ? 'arquivos Excel' : 'um arquivo Excel'} aqui
         </p>
       </div>
       <input
         ref={fileInputRef}
         type="file"
         accept={accept}
+        multiple={multiple}
         onChange={handleFileSelect}
         className="hidden"
       />

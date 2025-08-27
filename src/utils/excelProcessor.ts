@@ -216,10 +216,10 @@ export class ExcelProcessor {
         
         const vencimentoFormatted = vencimento.toLocaleDateString('pt-BR');
 
-        // Para Vero, os valores vêm em centavos, então dividimos por 100
-        const brutoValue = this.parseMonetaryValue(row['Valor Transacao']) / 100;
-        const liquidoValue = this.parseMonetaryValue(row['Valor Liquido']) / 100;
-        const descontoValue = this.parseMonetaryValue(row['Vl Tx Adm (MDR)']) / 100;
+        // Para Vero, os valores estão em reais, não em centavos
+        const brutoValue = this.parseMonetaryValue(row['Valor Transacao']);
+        const liquidoValue = this.parseMonetaryValue(row['Valor Liquido']);
+        const descontoValue = this.parseMonetaryValue(row['Vl Tx Adm (MDR)']);
         
         return {
           AUTORIZADOR: String(row['NSU'] || ''),
@@ -383,8 +383,10 @@ export class ExcelProcessor {
           issues.push(`AUTORIZADOR "${processedRow.AUTORIZADOR}" não encontrado no banco`);
         } else {
           potentialMatches.forEach(bankRow => {
-            if (this.normalizeDate(bankRow.VENDA) !== this.normalizeDate(processedRow.VENDA)) {
-              issues.push(`DATA DA VENDA divergente: ${processedRow.VENDA} vs ${bankRow.VENDA}`);
+            // Para Vero, compara VENDA com Data Movimento formatada
+            const campoVendaBanco = bankType === 'vero' ? bankRow.VENDA : bankRow.VENDA;
+            if (this.normalizeDate(campoVendaBanco) !== this.normalizeDate(processedRow.VENDA)) {
+              issues.push(`DATA DA VENDA divergente: ${processedRow.VENDA} vs ${campoVendaBanco}`);
             }
             
             if (bankType !== 'vero') {
