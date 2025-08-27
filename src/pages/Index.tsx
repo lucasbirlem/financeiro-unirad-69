@@ -256,7 +256,10 @@ const Index = () => {
                   <FileUpload
                     label="Arquivo(s) do Otimus"
                     description="Arquivo(s) Excel gerado(s) pelo sistema Otimus (podem ser múltiplos de caixas diferentes)"
-                    onFileSelect={(files) => setRelCartoesFile(Array.isArray(files) ? files : [files])}
+                    onFileSelect={(files) => {
+                      const fileArray = Array.isArray(files) ? files : [files];
+                      setRelCartoesFile(prev => prev ? [...prev, ...fileArray] : fileArray);
+                    }}
                     selectedFile={relCartoesFile}
                     onRemoveFile={() => setRelCartoesFile(undefined)}
                     multiple={true}

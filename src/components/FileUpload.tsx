@@ -85,7 +85,7 @@ export const FileUpload = ({
                   </p>
                 </div>
               </div>
-              {onRemoveFile && (
+              {onRemoveFile && files.length === 1 && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -98,11 +98,36 @@ export const FileUpload = ({
             </div>
           </Card>
         ))}
-        {multiple && files.length > 1 && (
-          <p className="text-sm text-muted-foreground text-center">
-            {files.length} arquivo(s) selecionado(s)
-          </p>
+        {multiple && (
+          <div className="mt-4 space-y-2">
+            <Button 
+              onClick={handleClick} 
+              variant="outline" 
+              size="sm"
+              className="w-full"
+            >
+              Adicionar Mais Arquivos
+            </Button>
+            {onRemoveFile && (
+              <Button 
+                onClick={onRemoveFile} 
+                variant="destructive" 
+                size="sm"
+                className="w-full"
+              >
+                Remover Todos os Arquivos
+              </Button>
+            )}
+          </div>
         )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={accept}
+          multiple={multiple}
+          onChange={handleFileSelect}
+          className="hidden"
+        />
       </div>
     );
   }
