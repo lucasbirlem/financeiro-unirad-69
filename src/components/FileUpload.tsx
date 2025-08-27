@@ -45,10 +45,13 @@ export const FileUpload = ({
     );
     
     if (excelFiles.length > 0) {
-      if (multiple) {
-        onFileSelect(excelFiles);
+      if (multiple && selectedFile) {
+        // Se é múltiplo e já tem arquivos, adiciona aos existentes
+        const existingFiles = Array.isArray(selectedFile) ? selectedFile : [selectedFile];
+        onFileSelect([...existingFiles, ...excelFiles]);
       } else {
-        onFileSelect(excelFiles[0]);
+        // Se não é múltiplo ou não tem arquivos anteriores
+        onFileSelect(multiple ? excelFiles : excelFiles[0]);
       }
     }
   };
@@ -56,11 +59,19 @@ export const FileUpload = ({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      if (multiple) {
-        onFileSelect(Array.from(files));
+      const newFiles = Array.from(files);
+      if (multiple && selectedFile) {
+        // Se é múltiplo e já tem arquivos, adiciona aos existentes
+        const existingFiles = Array.isArray(selectedFile) ? selectedFile : [selectedFile];
+        onFileSelect([...existingFiles, ...newFiles]);
       } else {
-        onFileSelect(files[0]);
+        // Se não é múltiplo ou não tem arquivos anteriores
+        onFileSelect(multiple ? newFiles : newFiles[0]);
       }
+    }
+    // Limpa o input para permitir selecionar os mesmos arquivos novamente
+    if (e.target) {
+      e.target.value = '';
     }
   };
 

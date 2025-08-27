@@ -258,7 +258,7 @@ const Index = () => {
                     description="Arquivo(s) Excel gerado(s) pelo sistema Otimus (podem ser múltiplos de caixas diferentes)"
                     onFileSelect={(files) => {
                       const fileArray = Array.isArray(files) ? files : [files];
-                      setRelCartoesFile(prev => prev ? [...prev, ...fileArray] : fileArray);
+                      setRelCartoesFile(fileArray);
                     }}
                     selectedFile={relCartoesFile}
                     onRemoveFile={() => setRelCartoesFile(undefined)}
